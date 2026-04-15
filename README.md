@@ -13,7 +13,7 @@ The dataset consists of insurance claims containing customer details, policy inf
 
 During exploratory data analysis, several important patterns emerged.
 
-![Correlation Heatmap](images/correlation.png)
+![Correlation Heatmap](correlation.png)
 
 There is strong correlation between claim-related variables such as injury, property, and vehicle claims with total claim amount, indicating some redundancy in financial features.
 

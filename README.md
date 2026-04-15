@@ -19,7 +19,7 @@ There is strong correlation between claim-related variables such as injury, prop
 
 Another key observation came from analyzing incident severity.
 
-![Incident Severity vs Fraud](images/severity.png)
+![Incident Severity vs Fraud](severity.png)
 
 Fraudulent claims are significantly more common in cases involving major damage or total loss, suggesting that fraud tends to occur in high-impact situations.
 
@@ -39,7 +39,7 @@ Three models were trained and compared:
 
 The performance of these models was evaluated using ROC curves.
 
-![ROC Curve](images/roc.png)
+![ROC Curve](roc.png)
 
 All models performed similarly, with Random Forest slightly outperforming others. Given its balance of performance and interpretability, Random Forest was selected for further optimization.
 
@@ -55,7 +55,7 @@ Different thresholds were tested to better align the model with business priorit
 
 At a threshold of **0.25**, the model achieved the best balance between detecting fraud and maintaining reasonable accuracy.
 
-![Confusion Matrix](images/confusion.png)
+![Confusion Matrix](confusion.png)
 
 This step highlights a key insight:  
 **Model performance is not just about accuracy, but about choosing the right trade-off for the problem.**
@@ -68,7 +68,7 @@ Understanding *why* the model makes predictions is just as important as the pred
 
 Feature importance analysis from the Random Forest model revealed the most influential variables.
 
-![Feature Importance](images/importance.png)
+![Feature Importance](importance.png)
 
 The model heavily relies on:
 - Incident severity
@@ -77,7 +77,7 @@ The model heavily relies on:
 
 To go deeper, SHAP (SHapley Additive exPlanations) was used with the XGBoost model.
 
-![SHAP Summary](images/shap.png)
+![SHAP Summary](shap.png)
 
 SHAP provides insight into how each feature influences predictions. It also revealed some unexpected patterns (such as certain categorical variables appearing important), highlighting the possibility of spurious correlations and reinforcing the need for careful interpretation.
 
@@ -103,7 +103,7 @@ To address this, a **simplified deployment model** was created using a reduced s
 
 The final model was deployed as an interactive Streamlit application.
 
-![App Screenshot](images/app.png)
+![App Screenshot](app.png)
 
 The application allows users to:
 - Enter claim and incident details  

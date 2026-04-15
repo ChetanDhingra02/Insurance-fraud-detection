@@ -103,7 +103,7 @@ To address this, a **simplified deployment model** was created using a reduced s
 
 The final model was deployed as an interactive Streamlit application.
 
-![App Screenshot](app.png)
+![App Screenshot](apps.png)
 
 The application allows users to:
 - Enter claim and incident details  

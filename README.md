@@ -101,7 +101,7 @@ While the original model used many features, it was not practical for deployment
 
 To address this, a **simplified deployment model** was created using a reduced set of important features. This allowed the system to remain effective while significantly improving usability.
 
-The final model was deployed as an interactive Streamlit application.
+The final model was deployed as an interactive Streamlit application. 👉 [Open Live App](https://insurance-fraud-detection-4jqywawedpwrfsdxcwlryt.streamlit.app/)
 
 ![App Screenshot](apps.png)
 

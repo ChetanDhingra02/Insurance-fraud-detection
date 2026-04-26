@@ -2,19 +2,17 @@ import streamlit as st
 import joblib
 import html
 
-# ── Load model ──────────────────────────────────────────────────────────────
 model = joblib.load("deploy_fraud_model.pkl")
 template_row = joblib.load("deploy_input_template.pkl")
 THRESHOLD = 0.25
 
-# ── Page config ──────────────────────────────────────────────────────────────
 st.set_page_config(
     page_title="Insurance Fraud Detection",
     page_icon="🚗",
     layout="wide",
 )
 
-# ── CSS ──────────────────────────────────────────────────────────────────────
+
 st.markdown("""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
@@ -26,11 +24,9 @@ html, body, [class*="css"] {
 
 .stApp {
     background:
-        radial-gradient(circle at 12% 18%, rgba(220, 38, 38, 0.16), transparent 28%),
-        radial-gradient(circle at 88% 12%, rgba(37, 99, 235, 0.16), transparent 30%),
-        radial-gradient(circle at 70% 90%, rgba(15, 23, 42, 0.08), transparent 30%),
-        linear-gradient(135deg, #f8fafc 0%, #eef2f7 48%, #f8f5f0 100%);
-    overflow-x: hidden;
+        radial-gradient(circle at 12% 20%, rgba(250,204,21,0.13), transparent 28%),
+        radial-gradient(circle at 88% 14%, rgba(59,130,246,0.12), transparent 30%),
+        linear-gradient(135deg, #f8fafc 0%, #eef2f7 52%, #f7f4ec 100%);
 }
 
 .stApp::before {
@@ -38,98 +34,79 @@ html, body, [class*="css"] {
     position: fixed;
     inset: 0;
     background-image:
-        linear-gradient(90deg, rgba(15,23,42,0.045) 1px, transparent 1px),
-        linear-gradient(rgba(15,23,42,0.035) 1px, transparent 1px);
-    background-size: 54px 54px;
+        linear-gradient(90deg, rgba(15,23,42,0.035) 1px, transparent 1px),
+        linear-gradient(rgba(15,23,42,0.028) 1px, transparent 1px);
+    background-size: 56px 56px;
     pointer-events: none;
-    z-index: 0;
-}
-
-.stApp::after {
-    content: "";
-    position: fixed;
-    width: 520px;
-    height: 520px;
-    left: -160px;
-    top: 140px;
-    background: radial-gradient(circle, rgba(220,38,38,0.14), transparent 65%);
-    filter: blur(10px);
-    animation: ambientMove 12s ease-in-out infinite alternate;
-    pointer-events: none;
-    z-index: 0;
-}
-
-@keyframes ambientMove {
-    from { transform: translate3d(0,0,0) scale(1); }
-    to { transform: translate3d(180px,90px,0) scale(1.18); }
 }
 
 .main .block-container {
     max-width: 1180px;
-    padding: 2.5rem 2.2rem 5rem;
-    position: relative;
-    z-index: 1;
+    padding: 2.4rem 2.2rem 5rem;
 }
 
 [data-testid="stHeader"] {
     background: transparent;
 }
 
-.hero,
-.card {
-    background: rgba(255, 255, 255, 0.58);
-    backdrop-filter: blur(24px) saturate(170%);
-    -webkit-backdrop-filter: blur(24px) saturate(170%);
-    border: 1px solid rgba(255,255,255,0.72);
-    box-shadow:
-        0 24px 70px rgba(15,23,42,0.14),
-        inset 0 1px 0 rgba(255,255,255,0.75),
-        inset 0 -1px 0 rgba(15,23,42,0.05);
-    transition:
-        transform 0.28s ease,
-        box-shadow 0.28s ease,
-        border-color 0.28s ease;
-}
-
 .hero {
+    background: linear-gradient(135deg, rgba(17,24,39,0.94), rgba(51,65,85,0.92));
+    color: white;
     border-radius: 30px;
-    padding: 2.35rem;
-    margin-bottom: 1.5rem;
-    color: #111827;
-    position: relative;
+    padding: 2.4rem;
+    margin-bottom: 1.6rem;
+    box-shadow: 0 28px 70px rgba(15,23,42,0.22);
     overflow: hidden;
-    animation: riseIn 0.65s ease both;
-}
-
-.hero:hover,
-.card:hover {
-    transform: translateY(-5px) perspective(900px) rotateX(1.2deg);
-    box-shadow:
-        0 34px 90px rgba(15,23,42,0.18),
-        inset 0 1px 0 rgba(255,255,255,0.85);
+    position: relative;
+    animation: riseIn 0.6s ease both;
 }
 
 .hero::after {
     content: "";
     position: absolute;
-    right: -75px;
-    top: -85px;
-    width: 290px;
-    height: 290px;
-    border-radius: 50%;
-    border: 34px solid rgba(15,23,42,0.055);
+    left: 0;
+    right: 0;
+    bottom: 26px;
+    height: 7px;
+    background: repeating-linear-gradient(
+        90deg,
+        #facc15 0 56px,
+        transparent 56px 88px
+    );
+    opacity: 0.85;
+    animation: roadMove 3s linear infinite;
+}
+
+@keyframes roadMove {
+    from { background-position: 0 0; }
+    to { background-position: 176px 0; }
 }
 
 .card {
+    background: rgba(255,255,255,0.72);
+    backdrop-filter: blur(20px) saturate(160%);
+    -webkit-backdrop-filter: blur(20px) saturate(160%);
+    border: 1px solid rgba(255,255,255,0.72);
     border-radius: 24px;
     padding: 1.5rem 1.6rem;
     margin-bottom: 1.15rem;
+    box-shadow:
+        0 20px 50px rgba(15,23,42,0.11),
+        inset 0 1px 0 rgba(255,255,255,0.8);
     animation: riseIn 0.55s ease both;
+    transition: transform 0.22s ease, box-shadow 0.22s ease;
+}
+
+.card:hover {
+    transform: translateY(-4px);
+    box-shadow:
+        0 28px 70px rgba(15,23,42,0.15),
+        inset 0 1px 0 rgba(255,255,255,0.9);
 }
 
 @keyframes riseIn {
-    from { opacity: 0; transform: translateY(22px) scale(0.985); }
-    to { opacity: 1; transform: translateY(0) scale(1); }
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
 }
 
 .kicker,
@@ -140,49 +117,43 @@ html, body, [class*="css"] {
     text-transform: uppercase;
     color: #64748b;
     font-weight: 700;
-    margin-bottom: 0.72rem;
+    margin-bottom: 0.7rem;
+}
+
+.hero .kicker {
+    color: #cbd5e1;
 }
 
 .hero-title {
-    font-size: clamp(2.75rem, 5vw, 4.6rem);
+    font-size: clamp(2.8rem, 5vw, 4.7rem);
     line-height: 0.96;
     font-weight: 900;
     letter-spacing: -0.06em;
     margin: 0;
-    color: #0f172a;
+    color: white;
 }
 
-.hero-sub,
-.note {
-    color: #475569;
-    font-size: 0.97rem;
+.hero-sub {
+    color: #e5e7eb;
+    max-width: 780px;
+    font-size: 1rem;
     line-height: 1.7;
+    margin-top: 1rem;
+    margin-bottom: 2rem;
 }
 
 .heading {
-    font-size: 1.58rem;
+    font-size: 1.55rem;
     font-weight: 850;
     letter-spacing: -0.04em;
     margin-bottom: 0.45rem;
     color: #0f172a;
 }
 
-.road-rule {
-    height: 7px;
-    margin-top: 1.25rem;
-    border-radius: 999px;
-    background: repeating-linear-gradient(
-        90deg,
-        #dc2626 0 42px,
-        transparent 42px 66px
-    );
-    opacity: 0.72;
-    animation: roadMove 2.8s linear infinite;
-}
-
-@keyframes roadMove {
-    from { background-position: 0 0; }
-    to { background-position: 132px 0; }
+.note {
+    color: #475569;
+    font-size: 0.95rem;
+    line-height: 1.65;
 }
 
 label,
@@ -194,72 +165,46 @@ div[data-testid="stWidgetLabel"] p {
 
 div[data-baseweb="select"] > div,
 [data-testid="stNumberInput"] input {
-    background: rgba(255,255,255,0.82) !important;
+    background: rgba(255,255,255,0.92) !important;
     border: 1.5px solid rgba(100,116,139,0.35) !important;
     border-radius: 14px !important;
     min-height: 45px !important;
     color: #111827 !important;
+    -webkit-text-fill-color: #111827 !important;
     font-weight: 600 !important;
-    box-shadow:
-        0 10px 25px rgba(15,23,42,0.06),
-        inset 0 1px 0 rgba(255,255,255,0.75) !important;
+    box-shadow: 0 10px 25px rgba(15,23,42,0.06) !important;
 }
 
 div[data-baseweb="select"] span,
-div[data-baseweb="select"] div,
 div[data-baseweb="select"] input,
-[data-testid="stNumberInput"] input,
-input {
+[data-testid="stNumberInput"] input {
     color: #111827 !important;
     -webkit-text-fill-color: #111827 !important;
     opacity: 1 !important;
 }
 
-[data-testid="stNumberInput"] input::placeholder,
-input::placeholder {
-    color: #64748b !important;
-    -webkit-text-fill-color: #64748b !important;
-    opacity: 0.75 !important;
-}
-
 div[data-baseweb="select"] svg {
-    color: #dc2626 !important;
+    color: #f59e0b !important;
     opacity: 1 !important;
-    width: 20px !important;
-    height: 20px !important;
-}
-
-div[data-baseweb="select"] > div::after {
-    content: "▾";
-    color: #dc2626;
-    font-size: 1rem;
-    font-weight: 900;
-    margin-right: 0.4rem;
 }
 
 div[data-baseweb="select"] > div:hover,
 [data-testid="stNumberInput"] input:focus {
-    border-color: rgba(220,38,38,0.75) !important;
+    border-color: rgba(245,158,11,0.8) !important;
     box-shadow:
-        0 0 0 4px rgba(220,38,38,0.12),
+        0 0 0 4px rgba(245,158,11,0.15),
         0 16px 35px rgba(15,23,42,0.10) !important;
 }
 
 [data-baseweb="menu"] {
-    background: rgba(255,255,255,0.96) !important;
-    backdrop-filter: blur(20px) !important;
-    border: 1px solid rgba(148,163,184,0.35) !important;
+    background: rgba(255,255,255,0.97) !important;
+    color: #111827 !important;
     border-radius: 14px !important;
-    box-shadow: 0 18px 45px rgba(15,23,42,0.18) !important;
 }
 
 [data-baseweb="option"] {
     color: #111827 !important;
     font-weight: 600 !important;
-}
-
-[data-baseweb="option"]:hover {
-    background: rgba(220,38,38,0.08) !important;
 }
 
 [data-testid="stNumberInput"] button {
@@ -269,7 +214,7 @@ div[data-baseweb="select"] > div:hover,
 }
 
 [data-testid="stNumberInput"] button:hover {
-    background: #dc2626 !important;
+    background: #f59e0b !important;
 }
 
 [data-testid="stSlider"] [role="slider"],
@@ -279,61 +224,44 @@ div[data-baseweb="select"] > div:hover,
     border: 3px solid #ffffff !important;
     width: 25px !important;
     height: 25px !important;
-    box-shadow:
-        0 5px 14px rgba(15,23,42,0.34),
-        0 0 0 4px rgba(220,38,38,0.10) !important;
-    transition: transform 0.18s ease !important;
-}
-
-[data-testid="stSlider"] [role="slider"]:hover,
-[data-testid="stSelectSlider"] [role="slider"]:hover {
-    transform: scale(1.12);
+    box-shadow: 0 5px 14px rgba(15,23,42,0.34) !important;
 }
 
 div.stButton > button {
-    background: linear-gradient(135deg, #ef4444, #991b1b) !important;
-    color: white !important;
-    border: 1px solid rgba(255,255,255,0.45) !important;
+    background: linear-gradient(135deg, #f59e0b, #d97706) !important;
+    color: #111827 !important;
+    border: none !important;
     border-radius: 16px !important;
     padding: 0.9rem 2rem !important;
     font-weight: 850 !important;
     font-size: 0.98rem !important;
-    box-shadow:
-        0 16px 34px rgba(220,38,38,0.30),
-        inset 0 1px 0 rgba(255,255,255,0.35);
-    transition: all 0.2s ease-in-out;
+    box-shadow: 0 18px 38px rgba(217,119,6,0.28);
+    transition: 0.2s ease-in-out;
 }
 
 div.stButton > button:hover {
-    transform: translateY(-3px) scale(1.015);
-    box-shadow:
-        0 24px 48px rgba(220,38,38,0.40),
-        inset 0 1px 0 rgba(255,255,255,0.45);
+    transform: translateY(-3px) scale(1.01);
+    box-shadow: 0 24px 48px rgba(217,119,6,0.36);
 }
 
 .score {
-    font-size: 4.8rem;
+    font-size: 5rem;
     line-height: 1;
     font-weight: 900;
     letter-spacing: -0.07em;
-    margin: 0.4rem 0 0.7rem;
+    margin: 0.35rem 0 0.8rem;
 }
 
 .low-text { color: #15803d; }
 .medium-text { color: #d97706; }
-.high-text { color: #dc2626; animation: pulseRisk 1.8s infinite; }
-
-@keyframes pulseRisk {
-    0%, 100% { filter: drop-shadow(0 0 0 rgba(220,38,38,0)); }
-    50% { filter: drop-shadow(0 0 12px rgba(220,38,38,0.22)); }
-}
+.high-text { color: #dc2626; }
 
 .badge {
     display: inline-flex;
     border-radius: 999px;
-    padding: 0.4rem 0.9rem;
+    padding: 0.42rem 0.95rem;
     font-weight: 800;
-    font-size: 0.82rem;
+    font-size: 0.84rem;
 }
 
 .badge-low { background: #dcfce7; color: #166534; }
@@ -341,7 +269,7 @@ div.stButton > button:hover {
 .badge-high { background: #fee2e2; color: #991b1b; }
 
 .progress-wrap {
-    background: rgba(226,232,240,0.85);
+    background: rgba(226,232,240,0.9);
     border-radius: 999px;
     height: 14px;
     overflow: hidden;
@@ -362,7 +290,7 @@ div.stButton > button:hover {
     display: flex;
     justify-content: space-between;
     border-bottom: 1px solid rgba(203,213,225,0.75);
-    padding: 0.6rem 0;
+    padding: 0.62rem 0;
     gap: 1rem;
 }
 
@@ -373,8 +301,9 @@ div.stButton > button:hover {
 }
 
 .metric-v {
-    font-weight: 750;
+    font-weight: 800;
     text-align: right;
+    color: #111827;
 }
 
 .driver {
@@ -393,6 +322,46 @@ div.stButton > button:hover {
     line-height: 1.55;
 }
 
+.gauge-wrap {
+    margin-top: 1.1rem;
+    background: rgba(15,23,42,0.04);
+    border-radius: 20px;
+    padding: 1rem;
+}
+
+.gauge-track {
+    height: 18px;
+    border-radius: 999px;
+    background: linear-gradient(90deg, #22c55e 0%, #facc15 45%, #f97316 70%, #ef4444 100%);
+    position: relative;
+    overflow: hidden;
+}
+
+.gauge-marker {
+    position: absolute;
+    top: -7px;
+    width: 8px;
+    height: 32px;
+    border-radius: 999px;
+    background: #111827;
+    box-shadow: 0 5px 14px rgba(15,23,42,0.35);
+    animation: markerPop 0.8s ease both;
+}
+
+@keyframes markerPop {
+    from { transform: scaleY(0); opacity: 0; }
+    to { transform: scaleY(1); opacity: 1; }
+}
+
+.gauge-labels {
+    display: flex;
+    justify-content: space-between;
+    color: #64748b;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.72rem;
+    margin-top: 0.5rem;
+}
+
 .footer-note {
     text-align: center;
     color: #64748b;
@@ -404,7 +373,6 @@ div.stButton > button:hover {
 """, unsafe_allow_html=True)
 
 
-# ── Helper functions ─────────────────────────────────────────────────────────
 def esc(x):
     return html.escape(str(x))
 
@@ -441,21 +409,20 @@ def risk_meta(fraud_prob):
 def action_meta(fraud_prob):
     if fraud_prob >= 0.50:
         return (
-            "Manual investigation required",
-            "This claim should be reviewed by an investigator before payout."
+            "Send for Manual Investigation",
+            "The model score is high. This claim should be reviewed by an investigator before payout."
         )
     elif fraud_prob >= THRESHOLD:
         return (
-            "Secondary review recommended",
-            "The score is above the operating threshold. Request supporting documents before approval."
+            "Flag for Secondary Review",
+            "The score is above the operating threshold. Route this claim for supervisor review and request supporting documents."
         )
     return (
-        "Standard processing route",
-        "No elevated fraud signal was detected from the entered claim details."
+        "Process Normally",
+        "No elevated fraud signal was detected. This claim can continue through the standard processing route."
     )
 
 
-# ── Header ───────────────────────────────────────────────────────────────────
 render_html("""
 <div class="hero">
   <div class="kicker">Auto Insurance Claims · Fraud Risk Scoring</div>
@@ -464,12 +431,10 @@ render_html("""
     A portfolio machine-learning app for triaging vehicle insurance claims using claim details,
     policy information, and incident-level risk signals.
   </p>
-  <div class="road-rule"></div>
 </div>
 """)
 
 
-# ── Inputs ───────────────────────────────────────────────────────────────────
 left, right = st.columns(2, gap="large")
 
 with left:
@@ -477,7 +442,7 @@ with left:
 <div class="card">
   <div class="section-label">01 · Incident profile</div>
   <div class="heading">Vehicle incident details</div>
-  <div class="note">Describe the reported collision, damage severity, injuries, witnesses, and customer tenure.</div>
+  <div class="note">Describe the collision, damage severity, injuries, witnesses, and customer tenure.</div>
 </div>
 """)
 
@@ -491,12 +456,7 @@ with left:
         ["Single Vehicle Collision", "Multi-vehicle Collision", "Vehicle Theft", "Parked Car"],
     )
 
-    number_of_vehicles_involved = st.slider(
-        "Vehicles Involved",
-        min_value=1,
-        max_value=4,
-        value=1,
-    )
+    number_of_vehicles_involved = st.slider("Vehicles Involved", 1, 4, 1)
 
     bodily_injuries_label = st.select_slider(
         "Reported Injuries",
@@ -512,11 +472,7 @@ with left:
     )
     witnesses = witnesses_label_to_value(witnesses_label)
 
-    months_as_customer = st.number_input(
-        "Months as Customer",
-        min_value=0,
-        value=200,
-    )
+    months_as_customer = st.number_input("Months as Customer", min_value=0, value=200)
 
 with right:
     render_html("""
@@ -537,7 +493,6 @@ with right:
 predict = st.button("Run claim risk assessment →")
 
 
-# ── Prediction ───────────────────────────────────────────────────────────────
 if predict:
     input_data = template_row.copy()
 
@@ -562,6 +517,7 @@ if predict:
 
     pct = round(fraud_prob * 100, 1)
     verdict = "Likely Fraudulent" if fraud_pred == 1 else "Likely Legitimate"
+    marker_left = min(max(pct, 1), 98)
 
     st.markdown("<br>", unsafe_allow_html=True)
 
@@ -572,7 +528,7 @@ if predict:
 <div class="card">
   <div class="section-label">03 · Model output</div>
   <div class="heading">Fraud probability score</div>
-  <div class="note">The model estimates how strongly the entered claim resembles a fraud-risk case.</div>
+  <div class="note">The model estimates how strongly the claim resembles a fraud-risk case.</div>
 
   <div class="score {text_cls}">{pct:.0f}%</div>
 
@@ -580,11 +536,21 @@ if predict:
     <div class="progress-fill" style="width:{pct}%; background:{risk_color};"></div>
   </div>
 
+  <div class="gauge-wrap">
+    <div class="gauge-track">
+      <div class="gauge-marker" style="left:{marker_left}%;"></div>
+    </div>
+    <div class="gauge-labels">
+      <span>Low</span>
+      <span>Review</span>
+      <span>High</span>
+    </div>
+  </div>
+
   <div class="metric-row">
     <span class="metric-k">Decision threshold</span>
     <span class="metric-v">{int(THRESHOLD * 100)}%</span>
   </div>
-
   <div class="metric-row">
     <span class="metric-k">Prediction</span>
     <span class="metric-v">{esc(verdict)}</span>
@@ -602,19 +568,17 @@ if predict:
   <div class="heading">Recommended handling path</div>
   <div class="note">The output supports triage and does not replace professional investigation.</div>
 
-  <h3 style="margin-top:1rem; font-size:1.35rem;">{esc(action_title)}</h3>
-  <p style="color:#4b5563; line-height:1.7;">{esc(action_desc)}</p>
+  <h3 style="margin-top:1rem; font-size:1.35rem; color:#111827;">{esc(action_title)}</h3>
+  <p style="color:#475569; line-height:1.7;">{esc(action_desc)}</p>
 
   <div class="metric-row">
     <span class="metric-k">Model</span>
     <span class="metric-v">Random Forest</span>
   </div>
-
   <div class="metric-row">
     <span class="metric-k">Features</span>
     <span class="metric-v">12 deployment inputs</span>
   </div>
-
   <div class="metric-row">
     <span class="metric-k">Use case</span>
     <span class="metric-v">Claim triage</span>
@@ -625,40 +589,22 @@ if predict:
     risk_drivers = []
 
     if incident_severity in ["Major Damage", "Total Loss"]:
-        risk_drivers.append((
-            "Severe vehicle damage",
-            "Major damage or total loss can increase the need for manual claim review."
-        ))
+        risk_drivers.append(("Severe vehicle damage", "Major damage or total loss can increase the need for manual claim review."))
 
     if total_claim_amount >= 60000:
-        risk_drivers.append((
-            "Large claim amount",
-            "The total claim amount is above $60,000."
-        ))
+        risk_drivers.append(("Large claim amount", "The total claim amount is above $60,000."))
 
     if number_of_vehicles_involved >= 2:
-        risk_drivers.append((
-            "Multi-vehicle incident",
-            "Multi-vehicle incidents are more complex and may require additional validation."
-        ))
+        risk_drivers.append(("Multi-vehicle incident", "Multi-vehicle incidents are more complex and may require additional validation."))
 
     if bodily_injuries >= 1:
-        risk_drivers.append((
-            "Injury component present",
-            "Bodily injury claims often require more supporting documentation."
-        ))
+        risk_drivers.append(("Injury component present", "Bodily injury claims often require more supporting documentation."))
 
     if witnesses >= 2:
-        risk_drivers.append((
-            "Multiple witnesses",
-            "The number of witnesses can affect claim investigation priority."
-        ))
+        risk_drivers.append(("Multiple witnesses", "The number of witnesses can affect claim investigation priority."))
 
     if months_as_customer < 24:
-        risk_drivers.append((
-            "Short customer history",
-            "A shorter policy history can be a mild review signal."
-        ))
+        risk_drivers.append(("Short customer history", "A shorter policy history can be a mild review signal."))
 
     if not risk_drivers:
         drivers_html = """

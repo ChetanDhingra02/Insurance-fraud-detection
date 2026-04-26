@@ -2,22 +2,19 @@ import streamlit as st
 import joblib
 import html
 
-# ── Load model ──────────────────────────────────────────────────────────────
 model = joblib.load("deploy_fraud_model.pkl")
 template_row = joblib.load("deploy_input_template.pkl")
 THRESHOLD = 0.25
 
-# ── Page config ──────────────────────────────────────────────────────────────
 st.set_page_config(
     page_title="Insurance Fraud Detection",
-    page_icon="📊",
+    page_icon="🚗",
     layout="wide",
 )
 
-# ── CSS ──────────────────────────────────────────────────────────────────────
 st.markdown("""
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
 
 html, body, [class*="css"] {
     font-family: 'Inter', sans-serif !important;
@@ -26,91 +23,149 @@ html, body, [class*="css"] {
 
 .stApp {
     background:
-        radial-gradient(circle at 12% 15%, rgba(95,143,50,0.08), transparent 26%),
-        radial-gradient(circle at 88% 22%, rgba(59,130,246,0.06), transparent 26%),
-        #f8f5ec;
+        radial-gradient(circle at 12% 18%, rgba(220, 38, 38, 0.10), transparent 26%),
+        radial-gradient(circle at 82% 16%, rgba(37, 99, 235, 0.10), transparent 28%),
+        linear-gradient(135deg, #f6f7f9 0%, #eef1f5 100%);
+}
+
+/* subtle road lines */
+.stApp::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    background-image:
+        linear-gradient(90deg, rgba(17,24,39,0.045) 1px, transparent 1px),
+        linear-gradient(rgba(17,24,39,0.035) 1px, transparent 1px);
+    background-size: 56px 56px;
+    pointer-events: none;
 }
 
 .main .block-container {
     max-width: 1180px;
-    padding: 2.6rem 2.2rem 5rem;
+    padding: 2.5rem 2.2rem 5rem;
 }
 
 [data-testid="stHeader"] {
     background: transparent;
 }
 
-.hero, .card {
-    background: #fffdf8;
-    border: 1.5px solid #1f2937;
-    border-radius: 20px;
-    box-shadow: 4px 4px 0 rgba(31,41,55,0.12);
+.hero {
+    background: linear-gradient(135deg, #111827 0%, #1f2937 58%, #334155 100%);
+    border-radius: 28px;
+    padding: 2.3rem;
+    margin-bottom: 1.5rem;
+    color: white;
+    box-shadow: 0 22px 60px rgba(15,23,42,0.24);
+    position: relative;
+    overflow: hidden;
+    animation: fadeUp 0.55s ease both;
 }
 
-.hero {
-    padding: 2rem;
-    margin-bottom: 1.4rem;
+.hero::after {
+    content: "";
+    position: absolute;
+    right: -80px;
+    top: -80px;
+    width: 300px;
+    height: 300px;
+    border: 34px solid rgba(255,255,255,0.06);
+    border-radius: 50%;
+}
+
+.kicker {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.73rem;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: #cbd5e1;
+    font-weight: 600;
+    margin-bottom: 0.7rem;
+}
+
+.hero-title {
+    font-size: clamp(2.7rem, 5vw, 4.6rem);
+    line-height: 0.96;
+    font-weight: 900;
+    letter-spacing: -0.055em;
+    margin: 0;
+    color: white;
+}
+
+.hero-sub {
+    max-width: 780px;
+    color: #d1d5db;
+    font-size: 1rem;
+    line-height: 1.7;
+    margin-top: 1rem;
 }
 
 .card {
-    padding: 1.35rem 1.45rem;
-    margin-bottom: 1rem;
+    background: rgba(255,255,255,0.82);
+    backdrop-filter: blur(18px);
+    border: 1px solid rgba(148,163,184,0.45);
+    border-radius: 22px;
+    padding: 1.45rem 1.55rem;
+    margin-bottom: 1.1rem;
+    box-shadow: 0 18px 42px rgba(15,23,42,0.10);
+    animation: fadeUp 0.5s ease both;
+    transition: transform 0.22s ease, box-shadow 0.22s ease;
 }
 
-.kicker, .section-label {
+.card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 24px 54px rgba(15,23,42,0.14);
+}
+
+.section-label {
     font-family: 'IBM Plex Mono', monospace;
     font-size: 0.72rem;
     letter-spacing: 0.15em;
     text-transform: uppercase;
-    color: #6b7280;
+    color: #64748b;
     font-weight: 600;
     margin-bottom: 0.6rem;
 }
 
-.hero-title {
-    font-size: clamp(2.4rem, 5vw, 4rem);
-    line-height: 1;
-    font-weight: 800;
-    letter-spacing: -0.045em;
-    margin: 0;
-    color: #111827;
-}
-
-.hero-sub, .note {
-    color: #4b5563;
-    font-size: 0.95rem;
-    line-height: 1.65;
-}
-
 .heading {
     font-size: 1.55rem;
-    font-weight: 800;
-    letter-spacing: -0.03em;
+    font-weight: 850;
+    letter-spacing: -0.035em;
     margin-bottom: 0.45rem;
     color: #111827;
 }
 
-.dot-row {
-    display: flex;
-    gap: 0.45rem;
-    margin-top: 1rem;
+.note {
+    color: #64748b;
+    font-size: 0.94rem;
+    line-height: 1.65;
 }
 
-.dot {
-    width: 11px;
-    height: 11px;
-    border-radius: 50%;
+.road-rule {
+    height: 7px;
+    margin-top: 1.2rem;
+    border-radius: 999px;
+    background: repeating-linear-gradient(
+        90deg,
+        #facc15 0 42px,
+        transparent 42px 66px
+    );
+    opacity: 0.85;
 }
 
-.red { background: #ef4444; }
-.orange { background: #f97316; }
-.green { background: #22c55e; }
-.blue { background: #38bdf8; }
-.purple { background: #a855f7; }
+@keyframes fadeUp {
+    from { opacity: 0; transform: translateY(18px); }
+    to { opacity: 1; transform: translateY(0); }
+}
 
+@keyframes pulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(220,38,38,0.22); }
+    50% { box-shadow: 0 0 0 9px rgba(220,38,38,0.02); }
+}
+
+/* Inputs */
 label,
 div[data-testid="stWidgetLabel"] p {
-    font-weight: 650 !important;
+    font-weight: 700 !important;
     color: #111827 !important;
     font-size: 0.86rem !important;
 }
@@ -119,57 +174,65 @@ div[data-baseweb="select"] > div,
 [data-testid="stNumberInput"] input {
     background: #ffffff !important;
     border: 1.5px solid #d1d5db !important;
-    border-radius: 10px !important;
-    min-height: 42px !important;
-    box-shadow: none !important;
+    border-radius: 12px !important;
+    min-height: 43px !important;
 }
 
 div[data-baseweb="select"] > div:hover,
 [data-testid="stNumberInput"] input:focus {
-    border-color: #5f8f32 !important;
-    box-shadow: 0 0 0 3px rgba(95,143,50,0.15) !important;
+    border-color: #dc2626 !important;
+    box-shadow: 0 0 0 3px rgba(220,38,38,0.13) !important;
 }
 
+/* tire-like slider knob */
 [data-testid="stSlider"] [role="slider"],
 [data-testid="stSelectSlider"] [role="slider"] {
-    background: #5f8f32 !important;
-    border: 2px solid white !important;
+    background: radial-gradient(circle, #111827 0 32%, #374151 33% 58%, #111827 59% 100%) !important;
+    border: 3px solid #ffffff !important;
+    width: 24px !important;
+    height: 24px !important;
+    box-shadow: 0 4px 12px rgba(17,24,39,0.32) !important;
+}
+
+[data-testid="stSlider"] [data-baseweb="slider"] > div,
+[data-testid="stSelectSlider"] [data-baseweb="slider"] > div {
+    color: #dc2626 !important;
 }
 
 div.stButton > button {
-    background: #5f8f32 !important;
+    background: linear-gradient(135deg, #dc2626, #991b1b) !important;
     color: white !important;
     border: none !important;
-    border-radius: 12px !important;
-    padding: 0.8rem 1.8rem !important;
-    font-weight: 750 !important;
-    font-size: 0.95rem !important;
-    box-shadow: 0 8px 20px rgba(95,143,50,0.22);
-    transition: 0.15s ease-in-out;
+    border-radius: 14px !important;
+    padding: 0.85rem 1.9rem !important;
+    font-weight: 800 !important;
+    font-size: 0.96rem !important;
+    box-shadow: 0 12px 28px rgba(220,38,38,0.28);
+    transition: 0.18s ease-in-out;
 }
 
 div.stButton > button:hover {
-    background: #4f7d28 !important;
-    transform: translateY(-1px);
+    transform: translateY(-2px);
+    box-shadow: 0 18px 38px rgba(220,38,38,0.35);
 }
 
 .score {
-    font-size: 4.6rem;
+    font-size: 4.8rem;
     line-height: 1;
-    font-weight: 800;
-    letter-spacing: -0.06em;
+    font-weight: 900;
+    letter-spacing: -0.07em;
     margin: 0.4rem 0 0.7rem;
 }
 
 .low-text { color: #15803d; }
 .medium-text { color: #d97706; }
-.high-text { color: #dc2626; }
+.high-text { color: #dc2626; animation: pulse 1.8s infinite; }
 
 .badge {
     display: inline-flex;
     border-radius: 999px;
-    padding: 0.35rem 0.85rem;
-    font-weight: 750;
+    padding: 0.4rem 0.9rem;
+    font-weight: 800;
     font-size: 0.82rem;
 }
 
@@ -182,73 +245,57 @@ div.stButton > button:hover {
     border-radius: 999px;
     height: 14px;
     overflow: hidden;
-    margin: 1rem 0 0.4rem;
+    margin: 1rem 0 0.5rem;
 }
 
 .progress-fill {
     height: 100%;
     border-radius: 999px;
+    animation: grow 0.9s ease-out both;
+}
+
+@keyframes grow {
+    from { width: 0%; }
 }
 
 .metric-row {
     display: flex;
     justify-content: space-between;
     border-bottom: 1px solid #e5e7eb;
-    padding: 0.55rem 0;
+    padding: 0.6rem 0;
     gap: 1rem;
 }
 
 .metric-k {
-    color: #6b7280;
+    color: #64748b;
     font-family: 'IBM Plex Mono', monospace;
     font-size: 0.76rem;
 }
 
 .metric-v {
-    font-weight: 700;
+    font-weight: 750;
     text-align: right;
-}
-
-.bar-row {
-    display: grid;
-    grid-template-columns: 90px 1fr 90px;
-    gap: 0.8rem;
-    align-items: center;
-    margin-bottom: 0.85rem;
-}
-
-.bar-track {
-    height: 18px;
-    background: #f3f4f6;
-    border-radius: 999px;
-    overflow: hidden;
-    border: 1px solid #d1d5db;
-}
-
-.bar-fill {
-    height: 100%;
-    border-radius: 999px;
 }
 
 .driver {
     border-bottom: 1px solid #e5e7eb;
-    padding: 0.72rem 0;
+    padding: 0.75rem 0;
 }
 
 .driver-title {
-    font-weight: 750;
+    font-weight: 800;
     color: #111827;
 }
 
 .driver-desc {
-    color: #6b7280;
+    color: #64748b;
     font-size: 0.86rem;
-    line-height: 1.5;
+    line-height: 1.55;
 }
 
 .footer-note {
     text-align: center;
-    color: #6b7280;
+    color: #64748b;
     font-family: 'IBM Plex Mono', monospace;
     font-size: 0.72rem;
     margin-top: 2rem;
@@ -257,13 +304,8 @@ div.stButton > button:hover {
 """, unsafe_allow_html=True)
 
 
-# ── Helper functions ─────────────────────────────────────────────────────────
 def esc(x):
     return html.escape(str(x))
-
-
-def money(x):
-    return f"${x:,.0f}"
 
 
 def render_html(code):
@@ -289,68 +331,50 @@ def witnesses_label_to_value(label):
 
 def risk_meta(fraud_prob):
     if fraud_prob < 0.25:
-        return "low", "Low Risk", "badge-low", "low-text", "#22c55e"
+        return "low", "Low Risk", "badge-low", "low-text", "#16a34a"
     elif fraud_prob < 0.50:
         return "medium", "Medium Risk", "badge-medium", "medium-text", "#f97316"
-    return "high", "High Risk", "badge-high", "high-text", "#ef4444"
+    return "high", "High Risk", "badge-high", "high-text", "#dc2626"
 
 
 def action_meta(fraud_prob):
     if fraud_prob >= 0.50:
         return (
-            "Send for Manual Investigation",
-            "The score is high. This claim should be reviewed by an investigator before payout."
+            "Manual investigation required",
+            "This claim should be reviewed by an investigator before payout."
         )
     elif fraud_prob >= THRESHOLD:
         return (
-            "Flag for Secondary Review",
-            "The score is above the decision threshold. Request supporting documentation and supervisor review."
+            "Secondary review recommended",
+            "The score is above the operating threshold. Request supporting documents before approval."
         )
     return (
-        "Process Normally",
-        "No elevated risk signal was detected. The claim may proceed through the standard workflow."
+        "Standard processing route",
+        "No elevated fraud signal was detected from the entered claim details."
     )
 
 
-def make_bar(label, value, width, color):
-    return (
-        f'<div class="bar-row">'
-        f'<div><b>{esc(label)}</b></div>'
-        f'<div class="bar-track"><div class="bar-fill" style="width:{width}%; background:{color};"></div></div>'
-        f'<div>{money(value)}</div>'
-        f'</div>'
-    )
-
-
-# ── Header ───────────────────────────────────────────────────────────────────
 render_html("""
 <div class="hero">
-  <div class="kicker">Machine Learning Portfolio Project</div>
+  <div class="kicker">Auto Insurance Claims · Fraud Risk Scoring</div>
   <h1 class="hero-title">Insurance Fraud<br>Detection</h1>
   <p class="hero-sub">
-    A clean claim-risk scoring app that turns claim details into a fraud probability,
-    risk band, and recommended review action.
+    A portfolio machine-learning app for triaging vehicle insurance claims using claim details,
+    policy information, and incident-level risk signals.
   </p>
-  <div class="dot-row">
-    <div class="dot red"></div>
-    <div class="dot orange"></div>
-    <div class="dot green"></div>
-    <div class="dot blue"></div>
-    <div class="dot purple"></div>
-  </div>
+  <div class="road-rule"></div>
 </div>
 """)
 
 
-# ── Inputs ───────────────────────────────────────────────────────────────────
 left, right = st.columns(2, gap="large")
 
 with left:
     render_html("""
 <div class="card">
-  <div class="section-label">01 · Incident details</div>
-  <div class="heading">Show the claim event</div>
-  <div class="note">These fields describe what happened during the reported incident.</div>
+  <div class="section-label">01 · Incident profile</div>
+  <div class="heading">Vehicle incident details</div>
+  <div class="note">Describe the reported collision, damage severity, injuries, witnesses, and customer tenure.</div>
 </div>
 """)
 
@@ -394,9 +418,9 @@ with left:
 with right:
     render_html("""
 <div class="card">
-  <div class="section-label">02 · Policy and claim values</div>
-  <div class="heading">Show the money data</div>
-  <div class="note">These inputs describe the size and structure of the insurance claim.</div>
+  <div class="section-label">02 · Policy and claim amount</div>
+  <div class="heading">Claim financial profile</div>
+  <div class="note">Enter the claim amount, sub-claims, premium, and deductible used by the model.</div>
 </div>
 """)
 
@@ -405,12 +429,11 @@ with right:
     property_claim = st.number_input("Property Claim ($)", min_value=0, value=10000)
     vehicle_claim = st.number_input("Vehicle Claim ($)", min_value=0, value=35000)
     policy_annual_premium = st.number_input("Annual Premium ($)", min_value=0.0, value=1200.0, step=10.0)
-    policy_deductable = st.number_input("Policy Deductable ($)", min_value=0, value=1000)
+    policy_deductable = st.number_input("Policy Deductible ($)", min_value=0, value=1000)
 
-predict = st.button("Run Fraud Assessment →")
+predict = st.button("Run claim risk assessment →")
 
 
-# ── Prediction ───────────────────────────────────────────────────────────────
 if predict:
     input_data = template_row.copy()
 
@@ -444,8 +467,8 @@ if predict:
         render_html(f"""
 <div class="card">
   <div class="section-label">03 · Model output</div>
-  <div class="heading">Show the fraud risk</div>
-  <div class="note">The model converts the claim information into a fraud probability score.</div>
+  <div class="heading">Fraud probability score</div>
+  <div class="note">The model estimates how strongly the entered claim resembles a fraud-risk case.</div>
   <div class="score {text_cls}">{pct:.0f}%</div>
   <div class="progress-wrap">
     <div class="progress-fill" style="width:{pct}%; background:{risk_color};"></div>
@@ -466,9 +489,9 @@ if predict:
     with action_col:
         render_html(f"""
 <div class="card">
-  <div class="section-label">04 · Recommended decision</div>
-  <div class="heading">Show the action</div>
-  <div class="note">The app does not replace human review. It supports triage and prioritization.</div>
+  <div class="section-label">04 · Claim routing</div>
+  <div class="heading">Recommended handling path</div>
+  <div class="note">The output supports triage and does not replace professional investigation.</div>
   <h3 style="margin-top:1rem; font-size:1.35rem;">{esc(action_title)}</h3>
   <p style="color:#4b5563; line-height:1.7;">{esc(action_desc)}</p>
   <div class="metric-row">
@@ -480,90 +503,60 @@ if predict:
     <span class="metric-v">12 deployment inputs</span>
   </div>
   <div class="metric-row">
-    <span class="metric-k">Purpose</span>
-    <span class="metric-v">Portfolio demo</span>
+    <span class="metric-k">Use case</span>
+    <span class="metric-v">Claim triage</span>
   </div>
 </div>
 """)
 
-    other = max(0, total_claim_amount - injury_claim - property_claim - vehicle_claim)
-    max_claim = max(injury_claim, property_claim, vehicle_claim, other, 1)
+    risk_drivers = []
 
-    injury_w = round(injury_claim / max_claim * 100, 1)
-    property_w = round(property_claim / max_claim * 100, 1)
-    vehicle_w = round(vehicle_claim / max_claim * 100, 1)
-    other_w = round(other / max_claim * 100, 1)
+    if incident_severity in ["Major Damage", "Total Loss"]:
+        risk_drivers.append(("Severe vehicle damage", "Major damage or total loss can increase the need for manual claim review."))
 
-    st.markdown("<br>", unsafe_allow_html=True)
+    if total_claim_amount >= 60000:
+        risk_drivers.append(("Large claim amount", "The total claim amount is above $60,000."))
 
-    chart_col, driver_col = st.columns([1.2, 0.8], gap="large")
+    if number_of_vehicles_involved >= 2:
+        risk_drivers.append(("Multi-vehicle incident", "Multi-vehicle incidents are more complex and may require additional validation."))
 
-    with chart_col:
-        bars_html = (
-            make_bar("Injury", injury_claim, injury_w, "#ef4444") +
-            make_bar("Property", property_claim, property_w, "#f97316") +
-            make_bar("Vehicle", vehicle_claim, vehicle_w, "#38bdf8") +
-            make_bar("Other", other, other_w, "#a855f7")
-        )
+    if bodily_injuries >= 1:
+        risk_drivers.append(("Injury component present", "Bodily injury claims often require more supporting documentation."))
 
-        render_html(f"""
-<div class="card">
-  <div class="section-label">05 · Claim composition</div>
-  <div class="heading">Show the data clearly</div>
-  <div class="note">The claim is broken into injury, property, vehicle, and remaining claim amount.</div>
-  {bars_html}
-</div>
-""")
+    if witnesses >= 2:
+        risk_drivers.append(("Multiple witnesses", "The number of witnesses can affect claim investigation priority."))
 
-    with driver_col:
-        risk_drivers = []
+    if months_as_customer < 24:
+        risk_drivers.append(("Short customer history", "A shorter policy history can be a mild review signal."))
 
-        if incident_severity in ["Major Damage", "Total Loss"]:
-            risk_drivers.append(("High incident severity", "Major damage or total loss can increase claim risk."))
-
-        if total_claim_amount >= 60000:
-            risk_drivers.append(("Large total claim", "The total claim amount is above $60,000."))
-
-        if number_of_vehicles_involved >= 2:
-            risk_drivers.append(("Multiple vehicles involved", "Multi-vehicle claims can be more complex to validate."))
-
-        if bodily_injuries >= 1:
-            risk_drivers.append(("Reported bodily injuries", "Injury-related claims may require additional verification."))
-
-        if witnesses >= 2:
-            risk_drivers.append(("High witness count", "A high witness count can be a useful review signal."))
-
-        if months_as_customer < 24:
-            risk_drivers.append(("Short customer tenure", "Newer policies may require closer claim review."))
-
-        if not risk_drivers:
-            drivers_html = """
+    if not risk_drivers:
+        drivers_html = """
 <div class="driver">
-  <div class="driver-title">No major risk indicators</div>
-  <div class="driver-desc">The entered values did not trigger the main rule-based risk notes.</div>
+  <div class="driver-title">No major review triggers</div>
+  <div class="driver-desc">The entered values did not activate the main rule-based risk notes.</div>
 </div>
 """
-        else:
-            drivers_html = ""
-            for title, desc in risk_drivers:
-                drivers_html += f"""
+    else:
+        drivers_html = ""
+        for title, desc in risk_drivers:
+            drivers_html += f"""
 <div class="driver">
   <div class="driver-title">{esc(title)}</div>
   <div class="driver-desc">{esc(desc)}</div>
 </div>
 """
 
-        render_html(f"""
+    render_html(f"""
 <div class="card">
-  <div class="section-label">06 · Risk drivers</div>
-  <div class="heading">Show the why</div>
-  <div class="note">These notes explain which entered values may have contributed to the review decision.</div>
+  <div class="section-label">05 · Review signals</div>
+  <div class="heading">Key factors behind the recommendation</div>
+  <div class="note">These notes explain which entered values may have influenced the routing decision.</div>
   {drivers_html}
 </div>
 """)
 
     render_html("""
 <p class="footer-note">
-Portfolio demonstration · The model supports human review and should not be used as the only decision-maker.
+Portfolio demonstration · Supports claim triage and human review, not automatic denial or approval.
 </p>
 """)

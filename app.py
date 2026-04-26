@@ -14,465 +14,691 @@ st.set_page_config(
     layout="wide",
 )
 
-# ── CSS ───────────────────────────────────────────────────────────────────────
+# ── MASTER CSS ────────────────────────────────────────────────────────────────
 st.markdown("""
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,700&family=DM+Sans:wght@300;400;500&family=DM+Mono:wght@400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,700;0,9..144,900;1,9..144,400&family=JetBrains+Mono:wght@400;500&display=swap');
 
-/* ── Reset & base ── */
+/* ══════════════════════════════════════════════
+   GLOBAL
+══════════════════════════════════════════════ */
 html, body, [class*="css"] {
-    font-family: 'DM Sans', sans-serif;
-    color: #111;
+    font-family: 'Plus Jakarta Sans', sans-serif !important;
+    color: #1a1a2e !important;
 }
 
 .stApp {
-    background: #faf9f6;
+    background: linear-gradient(145deg,
+        #e8f4fd 0%,
+        #f0e8ff 25%,
+        #fce4ec 50%,
+        #e8f5e9 75%,
+        #fff8e1 100%);
+    background-attachment: fixed;
+    min-height: 100vh;
+}
+
+/* Subtle animated mesh overlay */
+.stApp::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background:
+        radial-gradient(ellipse 60% 50% at 20% 20%, rgba(167,139,250,0.12) 0%, transparent 60%),
+        radial-gradient(ellipse 50% 60% at 80% 70%, rgba(96,165,250,0.10) 0%, transparent 60%),
+        radial-gradient(ellipse 40% 40% at 60% 10%, rgba(251,191,36,0.08) 0%, transparent 60%);
+    pointer-events: none;
+    z-index: 0;
+    animation: meshShift 18s ease-in-out infinite alternate;
+}
+
+@keyframes meshShift {
+    0%   { opacity: 0.7; transform: scale(1); }
+    100% { opacity: 1;   transform: scale(1.04); }
 }
 
 .main .block-container {
-    padding: 3rem 3.5rem 6rem;
-    max-width: 1180px;
+    padding: 3rem 3rem 6rem;
+    max-width: 1200px;
+    position: relative;
+    z-index: 1;
 }
 
-/* ── Animations ── */
+/* ══════════════════════════════════════════════
+   ANIMATIONS
+══════════════════════════════════════════════ */
 @keyframes fadeUp {
-    from { opacity: 0; transform: translateY(22px); }
+    from { opacity: 0; transform: translateY(24px); }
     to   { opacity: 1; transform: translateY(0); }
 }
-@keyframes slideIn {
-    from { opacity: 0; transform: translateX(-18px); }
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+}
+@keyframes slideRight {
+    from { opacity: 0; transform: translateX(-20px); }
     to   { opacity: 1; transform: translateX(0); }
 }
-@keyframes drawLine {
-    from { width: 0; }
-    to   { width: 100%; }
+@keyframes popIn {
+    0%   { opacity: 0; transform: scale(0.88); }
+    70%  { transform: scale(1.03); }
+    100% { opacity: 1; transform: scale(1); }
 }
-@keyframes pulse {
-    0%, 100% { transform: scale(1); }
-    50%       { transform: scale(1.04); }
+@keyframes barFill {
+    from { width: 0%; }
+    to   { width: var(--bar-w); }
 }
-@keyframes tickerIn {
-    from { opacity: 0; transform: scale(0.82); }
-    to   { opacity: 1; transform: scale(1); }
+@keyframes shimmer {
+    0%   { background-position: -200% center; }
+    100% { background-position:  200% center; }
+}
+@keyframes float {
+    0%, 100% { transform: translateY(0px); }
+    50%       { transform: translateY(-4px); }
 }
 
-/* ── Header ── */
+/* ══════════════════════════════════════════════
+   HEADER
+══════════════════════════════════════════════ */
 .hdr-tag {
-    font-family: 'DM Mono', monospace;
-    font-size: 0.7rem;
-    letter-spacing: 0.18em;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.68rem;
+    letter-spacing: 0.22em;
     text-transform: uppercase;
-    color: #999;
-    margin: 0 0 0.6rem;
+    color: #7c6fcd;
+    margin: 0 0 0.7rem;
     animation: fadeUp 0.5s ease both;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+.hdr-tag::before {
+    content: '';
+    display: inline-block;
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: #7c6fcd;
+    animation: float 2.5s ease-in-out infinite;
 }
 
 .hdr-title {
-    font-family: 'Playfair Display', Georgia, serif;
-    font-size: clamp(2.6rem, 5vw, 4rem);
+    font-family: 'Fraunces', Georgia, serif;
+    font-size: clamp(2.4rem, 4.5vw, 3.6rem);
     font-weight: 900;
-    color: #111;
-    line-height: 1.0;
-    margin: 0 0 0.5rem;
+    color: #1a1a2e;
+    line-height: 1.05;
+    margin: 0 0 0.6rem;
     letter-spacing: -1.5px;
-    animation: fadeUp 0.55s 0.08s ease both;
-}
-
-.hdr-rule {
-    height: 3px;
-    background: #111;
-    margin: 0.9rem 0 0.7rem;
-    animation: drawLine 0.7s 0.2s ease both;
-    transform-origin: left;
+    animation: fadeUp 0.55s 0.07s ease both;
 }
 
 .hdr-sub {
-    font-family: 'DM Sans', sans-serif;
-    font-size: 0.88rem;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 0.9rem;
     font-weight: 300;
-    color: #777;
-    letter-spacing: 0.02em;
-    margin: 0 0 2.5rem;
-    animation: fadeUp 0.55s 0.18s ease both;
+    color: #64748b;
+    margin: 0 0 2.8rem;
+    animation: fadeUp 0.55s 0.14s ease both;
+    letter-spacing: 0.01em;
 }
 
-/* ── Section titles ── */
-.sec-title {
-    font-family: 'DM Mono', monospace;
-    font-size: 0.68rem;
-    font-weight: 500;
-    letter-spacing: 0.2em;
-    text-transform: uppercase;
-    color: #aaa;
-    margin: 0 0 1.1rem;
-    padding-bottom: 0.55rem;
-    border-bottom: 1.5px solid #e8e8e4;
+.hdr-divider {
+    height: 2px;
+    background: linear-gradient(90deg, #a78bfa, #60a5fa, #fb7185, transparent);
+    border-radius: 1px;
+    margin-bottom: 0.8rem;
+    animation: fadeIn 0.8s 0.2s ease both;
 }
 
-/* ── Input cards ── */
-.input-card {
-    background: #fff;
-    border: 1.5px solid #e5e5e0;
-    border-radius: 3px;
-    padding: 1.6rem 1.8rem 1.2rem;
+/* ══════════════════════════════════════════════
+   GLASS CARD — the core component
+══════════════════════════════════════════════ */
+.glass-panel {
+    background: rgba(255, 255, 255, 0.52);
+    backdrop-filter: blur(22px) saturate(160%);
+    -webkit-backdrop-filter: blur(22px) saturate(160%);
+    border: 1.5px solid rgba(255, 255, 255, 0.75);
+    border-radius: 20px;
+    padding: 1.8rem 2rem 1.5rem;
     margin-bottom: 1rem;
-    animation: fadeUp 0.5s 0.25s ease both;
-    transition: border-color 0.2s;
+    box-shadow:
+        0 4px 24px rgba(124, 111, 205, 0.08),
+        0 1px 0 rgba(255,255,255,0.9) inset,
+        0 -1px 0 rgba(0,0,0,0.03) inset;
+    animation: fadeUp 0.5s 0.2s ease both;
+    transition: box-shadow 0.25s ease, transform 0.25s ease;
 }
-.input-card:hover { border-color: #bbb; }
+.glass-panel:hover {
+    box-shadow:
+        0 10px 40px rgba(124, 111, 205, 0.14),
+        0 1px 0 rgba(255,255,255,0.9) inset;
+    transform: translateY(-2px);
+}
 
-/* ── Widget label overrides ── */
+.panel-title {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.64rem;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: #94a3b8;
+    margin: 0 0 1.3rem;
+    padding-bottom: 0.7rem;
+    border-bottom: 1px solid rgba(148, 163, 184, 0.2);
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+}
+.panel-title-dot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    display: inline-block;
+    flex-shrink: 0;
+}
+
+/* ══════════════════════════════════════════════
+   STREAMLIT WIDGET OVERRIDES — HIGH CONTRAST
+══════════════════════════════════════════════ */
+
+/* ALL labels — dark, readable */
 label,
-.stSlider label,
-.stSelectbox label,
-.stNumberInput label,
-.stSelectSlider label {
-    font-family: 'DM Sans', sans-serif !important;
-    font-size: 0.78rem !important;
-    font-weight: 500 !important;
-    color: #555 !important;
-    letter-spacing: 0.03em !important;
+.stSelectbox > label,
+.stNumberInput > label,
+.stSlider > label,
+.stSelectSlider > label,
+div[data-testid="stWidgetLabel"] > label,
+div[data-testid="stWidgetLabel"] p {
+    font-family: 'Plus Jakarta Sans', sans-serif !important;
+    font-size: 0.8rem !important;
+    font-weight: 600 !important;
+    color: #374151 !important;
+    letter-spacing: 0.01em !important;
     text-transform: none !important;
-    margin-bottom: 0.15rem !important;
+    margin-bottom: 0.2rem !important;
 }
 
-/* Input elements */
-[data-baseweb="select"] > div,
-[data-testid="stNumberInput"] input {
-    border-radius: 3px !important;
-    border-color: #ddd !important;
-    font-family: 'DM Sans', sans-serif !important;
+/* Selectbox container */
+div[data-baseweb="select"] {
+    border-radius: 12px !important;
+}
+div[data-baseweb="select"] > div {
+    background: rgba(255,255,255,0.88) !important;
+    border: 2px solid rgba(148,163,184,0.45) !important;
+    border-radius: 12px !important;
+    color: #1a1a2e !important;
+    font-family: 'Plus Jakarta Sans', sans-serif !important;
     font-size: 0.9rem !important;
-    background: #faf9f6 !important;
-    transition: border-color 0.2s, box-shadow 0.2s !important;
-}
-[data-baseweb="select"] > div:focus-within,
-[data-testid="stNumberInput"] input:focus {
-    border-color: #111 !important;
-    box-shadow: 0 0 0 2px rgba(17,17,17,0.08) !important;
-}
-
-/* Slider thumb */
-[data-testid="stSlider"] [role="slider"] {
-    background: #111 !important;
-    border-color: #111 !important;
-}
-
-/* ── CTA button ── */
-div.stButton > button {
-    background: #111 !important;
-    color: #faf9f6 !important;
-    border: 2px solid #111 !important;
-    border-radius: 3px !important;
-    font-family: 'DM Mono', monospace !important;
-    font-size: 0.78rem !important;
     font-weight: 500 !important;
-    letter-spacing: 0.12em !important;
-    text-transform: uppercase !important;
-    padding: 0.65rem 2.2rem !important;
-    margin-top: 0.8rem !important;
-    transition: background 0.18s, color 0.18s, transform 0.12s !important;
+    min-height: 46px !important;
+    padding-left: 14px !important;
+    transition: border-color 0.2s, box-shadow 0.2s !important;
     cursor: pointer !important;
 }
+div[data-baseweb="select"] > div:hover {
+    border-color: #a78bfa !important;
+    box-shadow: 0 0 0 3px rgba(167,139,250,0.15) !important;
+}
+div[data-baseweb="select"] > div:focus-within {
+    border-color: #7c6fcd !important;
+    box-shadow: 0 0 0 3px rgba(124,111,205,0.2) !important;
+}
+
+/* Dropdown chevron — make it visible */
+div[data-baseweb="select"] svg {
+    color: #7c6fcd !important;
+    opacity: 1 !important;
+    width: 18px !important;
+    height: 18px !important;
+}
+
+/* Selected text value inside select */
+div[data-baseweb="select"] [data-testid="stMarkdownContainer"] p,
+div[data-baseweb="select"] span,
+div[data-baseweb="select"] div {
+    color: #1a1a2e !important;
+    font-weight: 500 !important;
+}
+
+/* Dropdown menu options */
+[data-baseweb="menu"] {
+    background: rgba(255,255,255,0.97) !important;
+    border: 1.5px solid rgba(167,139,250,0.3) !important;
+    border-radius: 12px !important;
+    box-shadow: 0 16px 40px rgba(0,0,0,0.12) !important;
+    backdrop-filter: blur(20px) !important;
+}
+[data-baseweb="option"] {
+    font-family: 'Plus Jakarta Sans', sans-serif !important;
+    font-size: 0.88rem !important;
+    color: #1a1a2e !important;
+    padding: 10px 16px !important;
+    transition: background 0.15s !important;
+}
+[data-baseweb="option"]:hover,
+[data-baseweb="option"][aria-selected="true"] {
+    background: rgba(167,139,250,0.15) !important;
+    color: #5b21b6 !important;
+}
+
+/* Number inputs */
+[data-testid="stNumberInput"] input {
+    background: rgba(255,255,255,0.88) !important;
+    border: 2px solid rgba(148,163,184,0.45) !important;
+    border-radius: 12px !important;
+    color: #1a1a2e !important;
+    font-family: 'Plus Jakarta Sans', sans-serif !important;
+    font-size: 0.9rem !important;
+    font-weight: 500 !important;
+    height: 46px !important;
+    padding-left: 14px !important;
+    transition: border-color 0.2s, box-shadow 0.2s !important;
+}
+[data-testid="stNumberInput"] input:focus {
+    border-color: #7c6fcd !important;
+    box-shadow: 0 0 0 3px rgba(124,111,205,0.2) !important;
+    outline: none !important;
+}
+[data-testid="stNumberInput"] input::placeholder {
+    color: #94a3b8 !important;
+}
+[data-testid="stNumberInput"] button {
+    background: rgba(255,255,255,0.7) !important;
+    border: 1.5px solid rgba(148,163,184,0.3) !important;
+    color: #7c6fcd !important;
+    border-radius: 8px !important;
+    font-size: 1.1rem !important;
+    font-weight: 600 !important;
+}
+[data-testid="stNumberInput"] button:hover {
+    background: rgba(167,139,250,0.2) !important;
+    border-color: #a78bfa !important;
+}
+
+/* Sliders */
+[data-testid="stSlider"] [role="slider"] {
+    background: #7c6fcd !important;
+    border: 2px solid white !important;
+    box-shadow: 0 2px 8px rgba(124,111,205,0.4) !important;
+}
+[data-testid="stSlider"] [data-testid="stTickBarMin"],
+[data-testid="stSlider"] [data-testid="stTickBarMax"] {
+    color: #94a3b8 !important;
+    font-size: 0.75rem !important;
+}
+
+/* Select slider */
+[data-testid="stSelectSlider"] [role="slider"] {
+    background: #7c6fcd !important;
+    border: 2px solid white !important;
+    box-shadow: 0 2px 8px rgba(124,111,205,0.4) !important;
+}
+[data-testid="stSelectSlider"] p {
+    color: #374151 !important;
+    font-size: 0.8rem !important;
+}
+
+/* ══════════════════════════════════════════════
+   CTA BUTTON
+══════════════════════════════════════════════ */
+div.stButton > button {
+    background: linear-gradient(135deg, #7c6fcd 0%, #a78bfa 50%, #60a5fa 100%) !important;
+    background-size: 200% 200% !important;
+    color: #fff !important;
+    border: none !important;
+    border-radius: 14px !important;
+    font-family: 'Plus Jakarta Sans', sans-serif !important;
+    font-size: 0.9rem !important;
+    font-weight: 700 !important;
+    letter-spacing: 0.04em !important;
+    padding: 0.75rem 2.8rem !important;
+    margin-top: 0.6rem !important;
+    box-shadow: 0 4px 20px rgba(124,111,205,0.35) !important;
+    transition: transform 0.18s, box-shadow 0.18s, background-position 0.4s !important;
+    cursor: pointer !important;
+    animation: fadeIn 0.5s 0.35s ease both !important;
+}
 div.stButton > button:hover {
-    background: #faf9f6 !important;
-    color: #111 !important;
-    transform: translateY(-1px) !important;
+    transform: translateY(-2px) !important;
+    box-shadow: 0 10px 32px rgba(124,111,205,0.45) !important;
+    background-position: right center !important;
 }
 div.stButton > button:active {
-    transform: translateY(0px) !important;
+    transform: translateY(0) scale(0.98) !important;
 }
 
-/* ── Result area ── */
-.result-wrap {
-    animation: fadeUp 0.5s ease both;
-    margin: 1.2rem 0 0;
-}
+/* ══════════════════════════════════════════════
+   RESULT COMPONENTS
+══════════════════════════════════════════════ */
 
-/* Big probability ticker */
-.prob-ticker-wrap {
-    padding: 2rem 2.2rem 1.8rem;
-    background: #fff;
-    border: 1.5px solid #e5e5e0;
-    border-radius: 3px;
+/* Big score card */
+.score-card {
+    background: rgba(255,255,255,0.6);
+    backdrop-filter: blur(24px) saturate(160%);
+    -webkit-backdrop-filter: blur(24px) saturate(160%);
+    border: 1.5px solid rgba(255,255,255,0.8);
+    border-radius: 22px;
+    padding: 2.2rem 2.4rem 2rem;
+    box-shadow: 0 8px 40px rgba(0,0,0,0.08), 0 1px 0 rgba(255,255,255,0.95) inset;
     position: relative;
     overflow: hidden;
+    animation: popIn 0.6s cubic-bezier(0.22,1,0.36,1) both;
 }
 
-.prob-ticker-wrap::before {
+.score-card::before {
     content: '';
     position: absolute;
-    left: 0; top: 0; bottom: 0;
-    width: 5px;
+    top: 0; left: 0; right: 0;
+    height: 4px;
+    border-radius: 22px 22px 0 0;
 }
-.prob-ticker-wrap.low::before    { background: #3ecf8e; }
-.prob-ticker-wrap.medium::before { background: #f6a623; }
-.prob-ticker-wrap.high::before   { background: #e74c3c; }
+.score-card.low::before    { background: linear-gradient(90deg, #34d399, #6ee7b7); }
+.score-card.medium::before { background: linear-gradient(90deg, #fbbf24, #fde68a); }
+.score-card.high::before   { background: linear-gradient(90deg, #f87171, #fca5a5); }
 
-.prob-eyebrow {
-    font-family: 'DM Mono', monospace;
+.score-eyebrow {
+    font-family: 'JetBrains Mono', monospace;
     font-size: 0.65rem;
     letter-spacing: 0.2em;
     text-transform: uppercase;
-    color: #aaa;
-    margin: 0 0 0.4rem;
+    color: #94a3b8;
+    margin: 0 0 0.5rem;
 }
 
-.prob-number {
-    font-family: 'Playfair Display', serif;
-    font-size: 5.5rem;
+.score-number {
+    font-family: 'Fraunces', serif;
+    font-size: 6rem;
     font-weight: 900;
     line-height: 1;
     margin: 0;
     letter-spacing: -3px;
-    animation: tickerIn 0.55s cubic-bezier(0.22,1,0.36,1) both;
+    animation: popIn 0.65s 0.1s cubic-bezier(0.22,1,0.36,1) both;
 }
-.prob-number.low    { color: #3ecf8e; }
-.prob-number.medium { color: #f6a623; }
-.prob-number.high   { color: #e74c3c; }
+.score-number.low    { color: #059669; }
+.score-number.medium { color: #d97706; }
+.score-number.high   { color: #dc2626; }
 
-.prob-label {
-    font-family: 'DM Sans', sans-serif;
+/* Animated progress bar */
+.prog-track {
+    width: 100%;
+    height: 6px;
+    background: rgba(148,163,184,0.18);
+    border-radius: 3px;
+    margin: 1.1rem 0 0.4rem;
+    overflow: hidden;
+}
+.prog-fill {
+    height: 100%;
+    border-radius: 3px;
+    animation: progAnim 1.2s cubic-bezier(0.22,1,0.36,1) both;
+    animation-delay: 0.15s;
+}
+.prog-fill.low    { background: linear-gradient(90deg, #34d399, #6ee7b7); }
+.prog-fill.medium { background: linear-gradient(90deg, #fbbf24, #fde68a); }
+.prog-fill.high   { background: linear-gradient(90deg, #f87171, #fca5a5); }
+
+@keyframes progAnim {
+    from { width: 0%; }
+}
+
+.prog-labels {
+    display: flex;
+    justify-content: space-between;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.62rem;
+    color: #94a3b8;
+    letter-spacing: 0.06em;
+    margin-bottom: 0.9rem;
+}
+
+.score-verdict {
+    font-family: 'Plus Jakarta Sans', sans-serif;
     font-size: 1rem;
-    font-weight: 500;
-    color: #111;
-    margin: 0.5rem 0 0;
+    font-weight: 600;
+    color: #1a1a2e;
+    margin: 0 0 0.6rem;
 }
 
-.prob-threshold {
-    font-family: 'DM Mono', monospace;
-    font-size: 0.72rem;
-    color: #bbb;
-    margin: 0.35rem 0 0;
-    letter-spacing: 0.04em;
-}
-
-/* Risk pill */
-.risk-pill {
-    display: inline-block;
-    font-family: 'DM Mono', monospace;
-    font-size: 0.7rem;
-    font-weight: 500;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-    padding: 0.28rem 0.85rem;
+/* Risk badge */
+.risk-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 0.3rem 0.9rem;
     border-radius: 999px;
-    border: 1.5px solid;
-    margin-top: 0.9rem;
+    letter-spacing: 0.03em;
 }
-.pill-low    { color: #1a9362; background: #edfaf4; border-color: #3ecf8e; }
-.pill-medium { color: #9a6200; background: #fff8ed; border-color: #f6a623; }
-.pill-high   { color: #c0392b; background: #fef0ef; border-color: #e74c3c; }
+.risk-badge::before {
+    content: '';
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+.badge-low    { color: #065f46; background: #d1fae5; }
+.badge-low::before    { background: #059669; }
+.badge-medium { color: #92400e; background: #fef3c7; }
+.badge-medium::before { background: #d97706; }
+.badge-high   { color: #991b1b; background: #fee2e2; }
+.badge-high::before   { background: #dc2626; }
 
 /* Action card */
 .action-card {
-    background: #fff;
-    border: 1.5px solid #e5e5e0;
-    border-radius: 3px;
-    padding: 1.8rem 2rem;
+    background: rgba(255,255,255,0.6);
+    backdrop-filter: blur(24px) saturate(160%);
+    -webkit-backdrop-filter: blur(24px) saturate(160%);
+    border: 1.5px solid rgba(255,255,255,0.8);
+    border-radius: 22px;
+    padding: 2.2rem 2.2rem;
+    box-shadow: 0 8px 40px rgba(0,0,0,0.08), 0 1px 0 rgba(255,255,255,0.95) inset;
+    animation: popIn 0.6s 0.1s cubic-bezier(0.22,1,0.36,1) both;
     height: 100%;
     box-sizing: border-box;
-    animation: fadeUp 0.5s 0.1s ease both;
-    position: relative;
-    overflow: hidden;
 }
-.action-card::after {
-    content: '';
-    position: absolute;
-    bottom: 0; left: 0; right: 0;
-    height: 3px;
-}
-.action-card.low::after    { background: #3ecf8e; }
-.action-card.medium::after { background: #f6a623; }
-.action-card.high::after   { background: #e74c3c; }
 
-.action-mono {
-    font-family: 'DM Mono', monospace;
-    font-size: 0.65rem;
-    letter-spacing: 0.2em;
+.action-chip {
+    display: inline-block;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.62rem;
+    letter-spacing: 0.15em;
     text-transform: uppercase;
-    color: #aaa;
-    margin: 0 0 0.6rem;
+    padding: 0.22rem 0.7rem;
+    border-radius: 6px;
+    margin-bottom: 0.9rem;
 }
+.chip-low    { background: #d1fae5; color: #065f46; }
+.chip-medium { background: #fef3c7; color: #92400e; }
+.chip-high   { background: #fee2e2; color: #991b1b; }
+
 .action-headline {
-    font-family: 'Playfair Display', serif;
+    font-family: 'Fraunces', serif;
     font-size: 1.55rem;
     font-weight: 700;
+    color: #1a1a2e;
     line-height: 1.2;
-    color: #111;
-    margin: 0 0 0.8rem;
+    margin: 0 0 0.9rem;
 }
+
 .action-desc {
-    font-family: 'DM Sans', sans-serif;
+    font-family: 'Plus Jakarta Sans', sans-serif;
     font-size: 0.88rem;
-    font-weight: 300;
-    color: #666;
-    line-height: 1.7;
+    font-weight: 400;
+    color: #4b5563;
+    line-height: 1.75;
     margin: 0;
 }
 
-/* ── Separator ── */
-.sep {
-    border: none;
-    border-top: 1.5px solid #e8e8e4;
-    margin: 2.2rem 0;
+/* ══════════════════════════════════════════════
+   CHART & DRIVERS
+══════════════════════════════════════════════ */
+.chart-glass {
+    background: rgba(255,255,255,0.6);
+    backdrop-filter: blur(22px) saturate(150%);
+    -webkit-backdrop-filter: blur(22px) saturate(150%);
+    border: 1.5px solid rgba(255,255,255,0.8);
+    border-radius: 20px;
+    padding: 1.8rem 2rem;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.06), 0 1px 0 rgba(255,255,255,0.9) inset;
+    animation: fadeUp 0.5s 0.25s ease both;
 }
 
-/* ── Chart block ── */
-.chart-card {
-    background: #fff;
-    border: 1.5px solid #e5e5e0;
-    border-radius: 3px;
-    padding: 1.6rem 1.8rem 1.8rem;
-    animation: fadeUp 0.5s 0.2s ease both;
-}
-
-.chart-label {
-    font-family: 'DM Mono', monospace;
-    font-size: 0.65rem;
-    letter-spacing: 0.2em;
-    text-transform: uppercase;
-    color: #aaa;
-    margin: 0 0 0.8rem;
-}
-
-/* ── Drivers ── */
-.drivers-card {
-    background: #fff;
-    border: 1.5px solid #e5e5e0;
-    border-radius: 3px;
-    padding: 1.6rem 1.8rem;
-    animation: fadeUp 0.5s 0.28s ease both;
+.drivers-glass {
+    background: rgba(255,255,255,0.6);
+    backdrop-filter: blur(22px) saturate(150%);
+    -webkit-backdrop-filter: blur(22px) saturate(150%);
+    border: 1.5px solid rgba(255,255,255,0.8);
+    border-radius: 20px;
+    padding: 1.8rem 2rem;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.06), 0 1px 0 rgba(255,255,255,0.9) inset;
+    animation: fadeUp 0.5s 0.3s ease both;
 }
 
 .driver-item {
     display: flex;
     align-items: flex-start;
-    gap: 0.75rem;
-    padding: 0.7rem 0;
-    border-bottom: 1px solid #f0f0eb;
-    font-family: 'DM Sans', sans-serif;
-    font-size: 0.86rem;
-    color: #444;
-    line-height: 1.55;
-    animation: slideIn 0.4s ease both;
+    gap: 0.8rem;
+    padding: 0.75rem 0;
+    border-bottom: 1px solid rgba(148,163,184,0.12);
+    animation: slideRight 0.4s ease both;
 }
 .driver-dot {
     width: 8px; height: 8px;
     border-radius: 50%;
-    background: #111;
+    background: linear-gradient(135deg, #a78bfa, #7c6fcd);
     flex-shrink: 0;
-    margin-top: 0.38rem;
+    margin-top: 0.42rem;
+    box-shadow: 0 0 6px rgba(167,139,250,0.5);
+}
+.driver-title {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #1a1a2e;
+    margin-bottom: 0.15rem;
+}
+.driver-desc {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 0.78rem;
+    color: #64748b;
+    line-height: 1.5;
 }
 
-/* model info */
-.minfo-table {
+.minfo {
     margin-top: 1.4rem;
-    border-top: 1.5px solid #e8e8e4;
     padding-top: 1rem;
+    border-top: 1px solid rgba(148,163,184,0.15);
 }
 .minfo-row {
     display: flex;
     justify-content: space-between;
-    align-items: baseline;
     padding: 0.3rem 0;
-    border-bottom: 1px solid #f2f2ee;
-    font-size: 0.8rem;
+    border-bottom: 1px solid rgba(148,163,184,0.08);
 }
 .minfo-k {
-    font-family: 'DM Mono', monospace;
-    font-size: 0.72rem;
-    color: #bbb;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.7rem;
+    color: #94a3b8;
     letter-spacing: 0.04em;
 }
 .minfo-v {
-    font-family: 'DM Sans', sans-serif;
-    font-weight: 500;
-    color: #444;
+    font-family: 'Plus Jakarta Sans', sans-serif;
     font-size: 0.8rem;
+    font-weight: 500;
+    color: #374151;
 }
 
-/* ── Footer ── */
-.footer {
-    font-family: 'DM Mono', monospace;
-    font-size: 0.68rem;
-    letter-spacing: 0.08em;
-    color: #ccc;
+.section-sep {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(148,163,184,0.25), transparent);
+    margin: 2rem 0;
+    animation: fadeIn 0.5s ease both;
+}
+
+.sec-header {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.65rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: #94a3b8;
+    margin: 0 0 1.2rem;
+    animation: fadeUp 0.4s ease both;
+}
+
+.footer-note {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.65rem;
+    letter-spacing: 0.1em;
+    color: #94a3b8;
     text-align: center;
     margin-top: 3rem;
     padding-top: 1.2rem;
-    border-top: 1px solid #eee;
+    border-top: 1px solid rgba(148,163,184,0.15);
+    animation: fadeIn 0.5s 0.4s ease both;
 }
-
-/* ── Progress bar ── */
-.pbar-track {
-    width: 100%;
-    height: 5px;
-    background: #f0f0eb;
-    border-radius: 2px;
-    margin: 1rem 0 0.3rem;
-    overflow: hidden;
-}
-.pbar-fill {
-    height: 100%;
-    border-radius: 2px;
-    transition: width 1.2s cubic-bezier(0.22,1,0.36,1);
-}
-
-hr { border: none; border-top: 1.5px solid #e8e8e4; margin: 2rem 0; }
 </style>
 """, unsafe_allow_html=True)
 
 
-# ── Helpers (LOGIC UNCHANGED) ────────────────────────────────────────────────
+# ── Helpers (LOGIC UNCHANGED) ─────────────────────────────────────────────────
 def bodily_injuries_label_to_value(label):
     return {"None": 0, "One reported injury": 1, "Multiple / serious injuries": 2}[label]
 
 def witnesses_label_to_value(label):
     return {"No witnesses": 0, "One witness": 1, "Two witnesses": 2, "Three or more witnesses": 3}[label]
 
-def risk_info(fraud_prob):
+def risk_meta(fraud_prob):
     if fraud_prob < 0.25:
-        return "Low Risk",    "low",    "pill-low"
+        return "low",    "Low Risk",    "badge-low",    "chip-low"
     elif fraud_prob < 0.50:
-        return "Medium Risk", "medium", "pill-medium"
-    return "High Risk",       "high",   "pill-high"
+        return "medium", "Medium Risk", "badge-medium", "chip-medium"
+    return "high",   "High Risk",   "badge-high",   "chip-high"
 
-def action_info(fraud_prob):
+def action_meta(fraud_prob):
     if fraud_prob >= 0.50:
         return "high",   "Send for Manual Investigation", \
                "The model score exceeds 50%. This claim requires a full investigator review before any payout is processed. Do not proceed automatically."
     elif fraud_prob >= THRESHOLD:
         return "medium", "Flag for Secondary Review", \
-               "The score is above the decision threshold. Route for a supervisor spot-check and additional documentation before proceeding."
+               "The score is above the decision threshold. Route for a supervisor spot-check and request additional documentation before proceeding."
     return "low",    "Process Normally", \
            "No elevated risk signals detected. This claim may proceed through the standard workflow without additional review steps."
 
 
-# ── Header ───────────────────────────────────────────────────────────────────
+# ── HEADER ────────────────────────────────────────────────────────────────────
 st.markdown("""
-<p class="hdr-tag">◎ ML Risk Scoring &nbsp;·&nbsp; Portfolio Project</p>
+<div class="hdr-tag">ML Risk Scoring &nbsp;·&nbsp; Portfolio Project</div>
 <h1 class="hdr-title">Insurance Fraud<br>Detection</h1>
-<div class="hdr-rule"></div>
+<div class="hdr-divider"></div>
 <p class="hdr-sub">Random Forest classifier &nbsp;·&nbsp; threshold-tuned for recall &nbsp;·&nbsp; 12-feature deployment model</p>
 """, unsafe_allow_html=True)
 
 
-# ── Inputs ────────────────────────────────────────────────────────────────────
+# ── INPUTS ────────────────────────────────────────────────────────────────────
 col_l, col_r = st.columns([1, 1], gap="large")
 
 with col_l:
-    st.markdown('<div class="input-card"><p class="sec-title">01 &nbsp; Incident Details</p>', unsafe_allow_html=True)
+    st.markdown("""
+    <div class="glass-panel">
+      <div class="panel-title">
+        <span class="panel-title-dot" style="background:linear-gradient(135deg,#a78bfa,#7c6fcd);"></span>
+        01 &nbsp; Incident Details
+      </div>
+    </div>
+    """, unsafe_allow_html=True)
 
     incident_severity = st.selectbox(
         "Incident Severity",
-        ["Minor Damage", "Major Damage", "Total Loss", "Trivial Damage"]
+        ["Minor Damage", "Major Damage", "Total Loss", "Trivial Damage"],
+        help="Select the severity level of the reported incident"
     )
     incident_type = st.selectbox(
         "Incident Type",
-        ["Single Vehicle Collision", "Multi-vehicle Collision", "Vehicle Theft", "Parked Car"]
+        ["Single Vehicle Collision", "Multi-vehicle Collision", "Vehicle Theft", "Parked Car"],
+        help="Select the type of incident that occurred"
     )
-    number_of_vehicles_involved = st.slider("Vehicles Involved", 1, 4, 1)
+    number_of_vehicles_involved = st.slider(
+        "Vehicles Involved", min_value=1, max_value=4, value=1
+    )
     bodily_injuries_label = st.select_slider(
         "Reported Injuries",
         options=["None", "One reported injury", "Multiple / serious injuries"],
@@ -485,12 +711,20 @@ with col_l:
         value="One witness"
     )
     witnesses = witnesses_label_to_value(witnesses_label)
-    months_as_customer = st.number_input("Months as Customer", min_value=0, value=200)
-
-    st.markdown('</div>', unsafe_allow_html=True)
+    months_as_customer = st.number_input(
+        "Months as Customer", min_value=0, value=200,
+        help="How long has this policy holder been a customer?"
+    )
 
 with col_r:
-    st.markdown('<div class="input-card"><p class="sec-title">02 &nbsp; Claim & Policy Details</p>', unsafe_allow_html=True)
+    st.markdown("""
+    <div class="glass-panel">
+      <div class="panel-title">
+        <span class="panel-title-dot" style="background:linear-gradient(135deg,#60a5fa,#38bdf8);"></span>
+        02 &nbsp; Claim & Policy Details
+      </div>
+    </div>
+    """, unsafe_allow_html=True)
 
     total_claim_amount    = st.number_input("Total Claim Amount ($)",  min_value=0,   value=50000)
     injury_claim          = st.number_input("Injury Claim ($)",        min_value=0,   value=5000)
@@ -499,12 +733,10 @@ with col_r:
     policy_annual_premium = st.number_input("Annual Premium ($)",      min_value=0.0, value=1200.0, step=10.0)
     policy_deductable     = st.number_input("Policy Deductable ($)",   min_value=0,   value=1000)
 
-    st.markdown('</div>', unsafe_allow_html=True)
-
-predict = st.button("RUN ASSESSMENT →")
+predict = st.button("◎  Run Fraud Assessment")
 
 
-# ── Prediction block (LOGIC UNCHANGED) ───────────────────────────────────────
+# ── PREDICTION (LOGIC UNCHANGED) ─────────────────────────────────────────────
 if predict:
     input_data = template_row.copy()
     input_data.loc[:, "incident_severity"]           = incident_severity
@@ -523,212 +755,190 @@ if predict:
     fraud_prob = model.predict_proba(input_data)[0, 1]
     fraud_pred = int(fraud_prob >= THRESHOLD)
 
-    risk_label, risk_cls, pill_cls  = risk_info(fraud_prob)
-    action_cls, action_hl, action_d = action_info(fraud_prob)
-    verdict = "Likely Fraudulent" if fraud_pred == 1 else "Likely Legitimate"
-
+    risk_cls, risk_label, badge_cls, chip_cls = risk_meta(fraud_prob)
+    action_cls, action_hl, action_d           = action_meta(fraud_prob)
+    verdict   = "Likely Fraudulent" if fraud_pred == 1 else "Likely Legitimate"
     pct       = round(fraud_prob * 100, 1)
-    pct_disp  = f"{pct:.0f}%"
-    bar_color = {"low": "#3ecf8e", "medium": "#f6a623", "high": "#e74c3c"}[risk_cls]
+    bar_colors = {
+        "low":    "linear-gradient(90deg, #34d399, #6ee7b7)",
+        "medium": "linear-gradient(90deg, #fbbf24, #fde68a)",
+        "high":   "linear-gradient(90deg, #f87171, #fca5a5)",
+    }
+    bar_gradient = bar_colors[risk_cls]
 
-    # ── Section divider
-    st.markdown('<hr>', unsafe_allow_html=True)
-    st.markdown('<p class="sec-title">03 &nbsp; Model Output</p>', unsafe_allow_html=True)
+    # ── Section 03: Results
+    st.markdown('<div class="section-sep"></div>', unsafe_allow_html=True)
+    st.markdown('<p class="sec-header">03 &nbsp; Model Output</p>', unsafe_allow_html=True)
 
-    # ── Result row ──
     res_col, act_col = st.columns([1, 1], gap="large")
 
     with res_col:
         st.markdown(f"""
-        <div class="prob-ticker-wrap {risk_cls}">
-            <p class="prob-eyebrow">Fraud Probability Score</p>
-            <p class="prob-number {risk_cls}">{pct_disp}</p>
-            <div class="pbar-track">
-                <div class="pbar-fill" style="width:{pct}%; background:{bar_color};"></div>
+        <div class="score-card {risk_cls}">
+            <p class="score-eyebrow">Fraud Probability Score</p>
+            <p class="score-number {risk_cls}">{pct:.0f}%</p>
+
+            <div class="prog-track">
+                <div class="prog-fill {risk_cls}" style="width:{pct}%;"></div>
             </div>
-            <p class="prob-threshold">Decision threshold · {int(THRESHOLD*100)}%</p>
-            <p class="prob-label">{verdict}</p>
-            <span class="{pill_cls} risk-pill">{risk_label}</span>
+            <div class="prog-labels">
+                <span>0%</span>
+                <span>Threshold {int(THRESHOLD*100)}%</span>
+                <span>100%</span>
+            </div>
+
+            <p class="score-verdict">{verdict}</p>
+            <span class="risk-badge {badge_cls}">{risk_label}</span>
         </div>
         """, unsafe_allow_html=True)
 
     with act_col:
         st.markdown(f"""
-        <div class="action-card {action_cls}">
-            <p class="action-mono">Recommended Action</p>
+        <div class="action-card">
+            <span class="action-chip {chip_cls}">Recommended Action</span>
             <p class="action-headline">{action_hl}</p>
             <p class="action-desc">{action_d}</p>
         </div>
         """, unsafe_allow_html=True)
 
-    # ── Charts + Drivers ──
-    st.markdown('<hr>', unsafe_allow_html=True)
-    st.markdown('<p class="sec-title">04 &nbsp; Claim Analysis & Risk Drivers</p>', unsafe_allow_html=True)
+    # ── Section 04: Charts + Drivers
+    st.markdown('<div class="section-sep"></div>', unsafe_allow_html=True)
+    st.markdown('<p class="sec-header">04 &nbsp; Claim Analysis & Risk Drivers</p>', unsafe_allow_html=True)
 
     ch_col, dr_col = st.columns([1.2, 0.8], gap="large")
-
     other = max(0, total_claim_amount - injury_claim - property_claim - vehicle_claim)
 
     with ch_col:
-        # chartosaur color palette — vivid, distinct
+        score_color = {
+            "low":    "#34d399",
+            "medium": "#fbbf24",
+            "high":   "#f87171",
+        }[risk_cls]
+
         chart_html = f"""
-<div style="font-family:'DM Sans',sans-serif;">
+<style>
+  body {{ margin:0; padding:0; }}
+  .cl {{ font-family:'JetBrains Mono',monospace; font-size:0.62rem;
+         letter-spacing:0.18em; text-transform:uppercase; color:#94a3b8;
+         margin:0 0 0.8rem; }}
+  .legend {{ display:flex; flex-wrap:wrap; gap:12px; margin:0.7rem 0 1.5rem;
+             font-family:'Plus Jakarta Sans',sans-serif; font-size:11px; color:#64748b; }}
+  .leg-item {{ display:flex; align-items:center; gap:5px; }}
+  .leg-dot  {{ width:9px; height:9px; border-radius:50%; flex-shrink:0; }}
+</style>
 
-  <p style="font-family:'DM Mono',monospace; font-size:0.65rem; letter-spacing:0.18em;
-            text-transform:uppercase; color:#aaa; margin:0 0 0.9rem;">
-    Claim composition
-  </p>
+<p class="cl">Claim Composition</p>
+<div style="position:relative;width:100%;height:200px;">
+  <canvas id="claimChart" role="img"
+    aria-label="Bar chart: Injury ${injury_claim:,}, Property ${property_claim:,}, Vehicle ${vehicle_claim:,}, Other ${other:,}">
+    Injury ${injury_claim:,} · Property ${property_claim:,} · Vehicle ${vehicle_claim:,} · Other ${other:,}
+  </canvas>
+</div>
 
-  <div style="position:relative; width:100%; height:210px;">
-    <canvas id="claimChart" role="img"
-      aria-label="Claim composition bar chart: Injury ${injury_claim:,}, Property ${property_claim:,}, Vehicle ${vehicle_claim:,}, Other ${other:,}">
-      Injury ${injury_claim:,} · Property ${property_claim:,} · Vehicle ${vehicle_claim:,} · Other ${other:,}
-    </canvas>
-  </div>
+<div class="legend">
+  <div class="leg-item"><div class="leg-dot" style="background:#fb7185;"></div>Injury</div>
+  <div class="leg-item"><div class="leg-dot" style="background:#fbbf24;"></div>Property</div>
+  <div class="leg-item"><div class="leg-dot" style="background:#60a5fa;"></div>Vehicle</div>
+  <div class="leg-item"><div class="leg-dot" style="background:#cbd5e1;"></div>Other</div>
+</div>
 
-  <div style="display:flex; flex-wrap:wrap; gap:14px; margin:1rem 0 1.6rem; font-size:11px;
-              font-family:'DM Mono',monospace; color:#888; letter-spacing:0.05em;">
-    <span style="display:flex;align-items:center;gap:5px;">
-      <span style="width:10px;height:10px;background:#e74c3c;border-radius:50%;"></span>Injury
-    </span>
-    <span style="display:flex;align-items:center;gap:5px;">
-      <span style="width:10px;height:10px;background:#f6a623;border-radius:50%;"></span>Property
-    </span>
-    <span style="display:flex;align-items:center;gap:5px;">
-      <span style="width:10px;height:10px;background:#3498db;border-radius:50%;"></span>Vehicle
-    </span>
-    <span style="display:flex;align-items:center;gap:5px;">
-      <span style="width:10px;height:10px;background:#bdc3c7;border-radius:50%;"></span>Other
-    </span>
-  </div>
-
-  <p style="font-family:'DM Mono',monospace; font-size:0.65rem; letter-spacing:0.18em;
-            text-transform:uppercase; color:#aaa; margin:0 0 0.8rem;">
-    Fraud score vs threshold
-  </p>
-
-  <div style="position:relative; width:100%; height:80px;">
-    <canvas id="gaugeChart" role="img"
-      aria-label="Horizontal gauge: model score {pct}%, threshold {int(THRESHOLD*100)}%">
-      Model score {pct}% vs threshold {int(THRESHOLD*100)}%
-    </canvas>
-  </div>
-
+<p class="cl">Score vs Threshold</p>
+<div style="position:relative;width:100%;height:72px;">
+  <canvas id="gaugeChart" role="img"
+    aria-label="Horizontal bar: score {pct:.0f}% vs threshold {int(THRESHOLD*100)}%">
+    Score {pct:.0f}% · Threshold {int(THRESHOLD*100)}%
+  </canvas>
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
 <script>
 (function() {{
-  const tickCfg = {{
-    color: '#aaa',
-    font: {{ family: "'DM Mono', monospace", size: 10 }}
-  }};
-  const gridCfg = {{ color: '#f0f0eb' }};
+  const T = {{ color:'#94a3b8', font:{{ family:"'Plus Jakarta Sans',sans-serif", size:11 }} }};
+  const G = {{ color:'rgba(148,163,184,0.15)' }};
 
-  /* ── Claim bar chart ── */
   new Chart(document.getElementById('claimChart'), {{
     type: 'bar',
     data: {{
       labels: ['Injury', 'Property', 'Vehicle', 'Other'],
       datasets: [{{
-        label: 'Amount ($)',
         data: [{injury_claim}, {property_claim}, {vehicle_claim}, {other}],
-        backgroundColor: ['#e74c3c', '#f6a623', '#3498db', '#dce0e0'],
-        borderWidth: 0,
-        borderRadius: 2,
+        backgroundColor: ['rgba(251,113,133,0.75)','rgba(251,191,36,0.75)','rgba(96,165,250,0.75)','rgba(203,213,225,0.6)'],
+        borderColor:     ['#fb7185','#fbbf24','#60a5fa','#cbd5e1'],
+        borderWidth: 1.5,
+        borderRadius: 8,
+        borderSkipped: false,
       }}]
     }},
     options: {{
-      responsive: true,
-      maintainAspectRatio: false,
+      responsive: true, maintainAspectRatio: false,
       animation: {{
         duration: 900,
         easing: 'easeOutQuart',
-        delay: (ctx) => ctx.dataIndex * 120,
+        delay: (ctx) => ctx.dataIndex * 110,
       }},
       plugins: {{
         legend: {{ display: false }},
         tooltip: {{
-          backgroundColor: '#111',
-          titleFont: {{ family: "'DM Mono', monospace", size: 11 }},
-          bodyFont:  {{ family: "'DM Sans', sans-serif",  size: 12 }},
-          padding: 10,
-          callbacks: {{
-            label: (c) => '  $' + c.raw.toLocaleString()
-          }}
+          backgroundColor: 'rgba(26,26,46,0.92)',
+          titleColor: '#94a3b8',
+          bodyColor: '#f1f5f9',
+          titleFont: {{ family:"'JetBrains Mono',monospace", size:11 }},
+          bodyFont:  {{ family:"'Plus Jakarta Sans',sans-serif", size:12 }},
+          padding: 12,
+          cornerRadius: 10,
+          callbacks: {{ label: (c) => '  $' + c.raw.toLocaleString() }}
         }}
       }},
       scales: {{
-        x: {{
-          grid:   {{ display: false }},
-          ticks:  tickCfg,
-          border: {{ display: false }}
-        }},
-        y: {{
-          grid:   gridCfg,
-          ticks:  {{ ...tickCfg, callback: (v) => '$' + v.toLocaleString() }},
-          border: {{ display: false }}
-        }}
+        x: {{ grid: {{ display:false }}, ticks: T, border: {{ display:false }} }},
+        y: {{ grid: G, ticks: {{ ...T, callback:(v) => '$'+v.toLocaleString() }}, border: {{ display:false }} }}
       }}
     }}
   }});
 
-  /* ── Gauge horizontal bar ── */
   new Chart(document.getElementById('gaugeChart'), {{
     type: 'bar',
     data: {{
-      labels: ['Score', 'Threshold'],
+      labels: ['Model score', 'Threshold'],
       datasets: [{{
-        data: [{pct}, {round(THRESHOLD*100,1)}],
-        backgroundColor: ['{bar_color}', '#dce0e0'],
-        borderWidth: 0,
-        borderRadius: 3,
+        data: [{pct:.1f}, {round(THRESHOLD*100,1)}],
+        backgroundColor: ['{score_color}88', 'rgba(203,213,225,0.5)'],
+        borderColor:     ['{score_color}', '#cbd5e1'],
+        borderWidth: 1.5,
+        borderRadius: 6,
+        borderSkipped: false,
       }}]
     }},
     options: {{
-      indexAxis: 'y',
-      responsive: true,
-      maintainAspectRatio: false,
-      animation: {{
-        duration: 1100,
-        easing: 'easeOutExpo',
-        delay: (ctx) => ctx.dataIndex * 180,
-      }},
+      indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+      animation: {{ duration: 1100, easing: 'easeOutExpo', delay: (ctx) => ctx.dataIndex * 200 }},
       plugins: {{
         legend: {{ display: false }},
         tooltip: {{
-          backgroundColor: '#111',
-          titleFont: {{ family: "'DM Mono', monospace", size: 11 }},
-          bodyFont:  {{ family: "'DM Sans', sans-serif",  size: 12 }},
-          padding: 10,
+          backgroundColor: 'rgba(26,26,46,0.92)',
+          titleColor: '#94a3b8', bodyColor: '#f1f5f9',
+          titleFont: {{ family:"'JetBrains Mono',monospace", size:11 }},
+          bodyFont:  {{ family:"'Plus Jakarta Sans',sans-serif", size:12 }},
+          padding: 12, cornerRadius: 10,
           callbacks: {{ label: (c) => '  ' + c.raw + '%' }}
         }}
       }},
       scales: {{
-        x: {{
-          max: 100,
-          grid:   gridCfg,
-          ticks:  {{ ...tickCfg, callback: (v) => v + '%' }},
-          border: {{ display: false }}
-        }},
-        y: {{
-          grid:   {{ display: false }},
-          ticks:  tickCfg,
-          border: {{ display: false }}
-        }}
+        x: {{ max: 100, grid: G, ticks: {{ ...T, callback:(v) => v+'%' }}, border: {{ display:false }} }},
+        y: {{ grid: {{ display:false }}, ticks: T, border: {{ display:false }} }}
       }}
     }}
   }});
 }})();
 </script>
 """
-        st.markdown('<div class="chart-card">', unsafe_allow_html=True)
-        st.components.v1.html(chart_html, height=430)
+        st.markdown('<div class="chart-glass">', unsafe_allow_html=True)
+        st.components.v1.html(chart_html, height=420)
         st.markdown('</div>', unsafe_allow_html=True)
 
     with dr_col:
-        st.markdown('<div class="drivers-card">', unsafe_allow_html=True)
-        st.markdown('<p class="sec-title">Risk Drivers</p>', unsafe_allow_html=True)
+        st.markdown('<div class="drivers-glass">', unsafe_allow_html=True)
+        st.markdown('<p class="panel-title" style="margin-bottom:1.1rem;"><span class="panel-title-dot" style="background:linear-gradient(135deg,#a78bfa,#7c6fcd);width:7px;height:7px;border-radius:50%;display:inline-block;margin-right:0.5rem;"></span>Risk Drivers</p>', unsafe_allow_html=True)
 
         risk_drivers = []
         if incident_severity in ["Major Damage", "Total Loss"]:
@@ -746,48 +956,35 @@ if predict:
 
         if not risk_drivers:
             st.markdown("""
-            <div class="driver-item" style="border-bottom:none; color:#3ecf8e;">
-                <div class="driver-dot" style="background:#3ecf8e; margin-top:0.35rem;"></div>
-                <span>No major risk indicators triggered by the entered values.</span>
+            <div class="driver-item" style="border-bottom:none;">
+                <div class="driver-dot" style="background:#34d399; box-shadow:0 0 6px rgba(52,211,153,0.5);"></div>
+                <div>
+                    <div class="driver-title" style="color:#059669;">No major risk indicators</div>
+                    <div class="driver-desc">No high-risk triggers detected from the entered values.</div>
+                </div>
             </div>""", unsafe_allow_html=True)
         else:
             for i, (title, desc) in enumerate(risk_drivers):
-                delay = i * 0.06
                 st.markdown(f"""
-                <div class="driver-item" style="animation-delay:{delay}s;">
+                <div class="driver-item" style="animation-delay:{i*0.07}s;">
                     <div class="driver-dot"></div>
                     <div>
-                        <div style="font-weight:500; color:#111; margin-bottom:0.15rem;
-                                    font-family:'DM Sans',sans-serif; font-size:0.85rem;">
-                            {title}
-                        </div>
-                        <div style="font-size:0.8rem; color:#888; line-height:1.5;">{desc}</div>
+                        <div class="driver-title">{title}</div>
+                        <div class="driver-desc">{desc}</div>
                     </div>
                 </div>""", unsafe_allow_html=True)
 
         st.markdown("""
-        <div class="minfo-table">
-          <div class="minfo-row">
-            <span class="minfo-k">Model type</span>
-            <span class="minfo-v">Random Forest</span>
-          </div>
-          <div class="minfo-row">
-            <span class="minfo-k">Optimisation</span>
-            <span class="minfo-v">Threshold → recall</span>
-          </div>
-          <div class="minfo-row">
-            <span class="minfo-k">Feature set</span>
-            <span class="minfo-v">12 inputs (reduced)</span>
-          </div>
-          <div class="minfo-row" style="border-bottom:none;">
-            <span class="minfo-k">Purpose</span>
-            <span class="minfo-v">Portfolio demo</span>
-          </div>
+        <div class="minfo">
+            <div class="minfo-row"><span class="minfo-k">Model</span><span class="minfo-v">Random Forest</span></div>
+            <div class="minfo-row"><span class="minfo-k">Tuning</span><span class="minfo-v">Threshold → recall</span></div>
+            <div class="minfo-row"><span class="minfo-k">Features</span><span class="minfo-v">12 inputs (reduced)</span></div>
+            <div class="minfo-row" style="border-bottom:none;"><span class="minfo-k">Purpose</span><span class="minfo-v">Portfolio demo</span></div>
         </div>
         """, unsafe_allow_html=True)
         st.markdown('</div>', unsafe_allow_html=True)
 
     st.markdown("""
-    <p class="footer">
-        ◎ &nbsp; Portfolio demonstration &nbsp;·&nbsp; supports human review, not a replacement for professional investigation
+    <p class="footer-note">
+        ◎ &nbsp; Portfolio demonstration &nbsp;·&nbsp; supports human review — not a replacement for professional investigation
     </p>""", unsafe_allow_html=True)

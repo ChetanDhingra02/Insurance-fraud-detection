@@ -1,5 +1,4 @@
 import streamlit as st
-import pandas as pd
 import joblib
 import html
 
@@ -15,10 +14,10 @@ st.set_page_config(
     layout="wide",
 )
 
-# ── Theme CSS ────────────────────────────────────────────────────────────────
+# ── CSS ──────────────────────────────────────────────────────────────────────
 st.markdown("""
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Gaegu:wght@400;700&family=JetBrains+Mono:wght@400;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
 
 html, body, [class*="css"] {
     font-family: 'Inter', sans-serif !important;
@@ -27,100 +26,80 @@ html, body, [class*="css"] {
 
 .stApp {
     background:
-        radial-gradient(circle at 15% 12%, rgba(239, 68, 68, 0.05), transparent 26%),
-        radial-gradient(circle at 88% 20%, rgba(34, 197, 94, 0.06), transparent 24%),
-        radial-gradient(circle at 70% 85%, rgba(59, 130, 246, 0.06), transparent 24%),
-        #faf8f1;
+        radial-gradient(circle at 12% 15%, rgba(95,143,50,0.08), transparent 26%),
+        radial-gradient(circle at 88% 22%, rgba(59,130,246,0.06), transparent 26%),
+        #f8f5ec;
 }
 
 .main .block-container {
     max-width: 1180px;
-    padding: 2.8rem 2.3rem 5rem;
+    padding: 2.6rem 2.2rem 5rem;
 }
 
 [data-testid="stHeader"] {
     background: transparent;
 }
 
-.story-shell {
-    background: rgba(255,255,255,0.72);
-    border: 2px solid #111827;
-    border-radius: 28px;
-    padding: 2rem 2rem 1.6rem;
-    box-shadow: 8px 8px 0 rgba(17,24,39,0.13);
-    margin-bottom: 1.5rem;
+.hero, .card {
+    background: #fffdf8;
+    border: 1.5px solid #1f2937;
+    border-radius: 20px;
+    box-shadow: 4px 4px 0 rgba(31,41,55,0.12);
 }
 
-.kicker {
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 0.74rem;
-    letter-spacing: 0.18em;
+.hero {
+    padding: 2rem;
+    margin-bottom: 1.4rem;
+}
+
+.card {
+    padding: 1.35rem 1.45rem;
+    margin-bottom: 1rem;
+}
+
+.kicker, .section-label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.72rem;
+    letter-spacing: 0.15em;
     text-transform: uppercase;
     color: #6b7280;
-    margin-bottom: 0.55rem;
+    font-weight: 600;
+    margin-bottom: 0.6rem;
 }
 
 .hero-title {
-    font-family: 'Gaegu', cursive;
-    font-size: clamp(3.1rem, 7vw, 5.2rem);
-    line-height: 0.88;
-    font-weight: 700;
+    font-size: clamp(2.4rem, 5vw, 4rem);
+    line-height: 1;
+    font-weight: 800;
+    letter-spacing: -0.045em;
     margin: 0;
     color: #111827;
 }
 
-.hero-sub {
-    max-width: 780px;
+.hero-sub, .note {
     color: #4b5563;
-    font-size: 1rem;
-    line-height: 1.7;
-    margin-top: 1rem;
+    font-size: 0.95rem;
+    line-height: 1.65;
 }
 
-.story-card {
-    background: #ffffff;
-    border: 2px solid #111827;
-    border-radius: 22px;
-    padding: 1.4rem 1.45rem;
-    box-shadow: 5px 5px 0 rgba(17,24,39,0.11);
-    margin-bottom: 1rem;
-}
-
-.story-heading {
-    font-family: 'Gaegu', cursive;
-    font-size: 2.35rem;
-    font-weight: 700;
-    line-height: 1;
-    margin-bottom: 0.75rem;
-}
-
-.story-note {
-    color: #6b7280;
-    font-size: 0.9rem;
-    line-height: 1.55;
-    margin-bottom: 1rem;
-}
-
-.section-label {
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 0.72rem;
-    text-transform: uppercase;
-    letter-spacing: 0.16em;
-    color: #6b7280;
-    margin-bottom: 0.8rem;
+.heading {
+    font-size: 1.55rem;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    margin-bottom: 0.45rem;
+    color: #111827;
 }
 
 .dot-row {
     display: flex;
-    gap: 0.55rem;
-    margin: 1rem 0 0.3rem;
+    gap: 0.45rem;
+    margin-top: 1rem;
 }
 
 .dot {
-    width: 13px;
-    height: 13px;
+    width: 11px;
+    height: 11px;
     border-radius: 50%;
-    border: 2px solid #111827;
 }
 
 .red { background: #ef4444; }
@@ -131,54 +110,54 @@ html, body, [class*="css"] {
 
 label,
 div[data-testid="stWidgetLabel"] p {
-    font-weight: 700 !important;
+    font-weight: 650 !important;
     color: #111827 !important;
-    font-size: 0.88rem !important;
+    font-size: 0.86rem !important;
 }
 
 div[data-baseweb="select"] > div,
 [data-testid="stNumberInput"] input {
-    background: #fffdf8 !important;
-    border: 2px solid #111827 !important;
-    border-radius: 14px !important;
-    min-height: 44px !important;
-    box-shadow: 3px 3px 0 rgba(17,24,39,0.10);
+    background: #ffffff !important;
+    border: 1.5px solid #d1d5db !important;
+    border-radius: 10px !important;
+    min-height: 42px !important;
+    box-shadow: none !important;
 }
 
 div[data-baseweb="select"] > div:hover,
 [data-testid="stNumberInput"] input:focus {
-    box-shadow: 4px 4px 0 rgba(17,24,39,0.16) !important;
-    border-color: #111827 !important;
+    border-color: #5f8f32 !important;
+    box-shadow: 0 0 0 3px rgba(95,143,50,0.15) !important;
 }
 
 [data-testid="stSlider"] [role="slider"],
 [data-testid="stSelectSlider"] [role="slider"] {
-    background: #6a9f37 !important;
-    border: 2px solid #111827 !important;
+    background: #5f8f32 !important;
+    border: 2px solid white !important;
 }
 
 div.stButton > button {
-    background: #6a9f37 !important;
+    background: #5f8f32 !important;
     color: white !important;
-    border: 2px solid #111827 !important;
-    border-radius: 18px !important;
-    padding: 0.85rem 2.4rem !important;
-    font-weight: 800 !important;
-    font-size: 1rem !important;
-    box-shadow: 5px 5px 0 rgba(17,24,39,0.20);
+    border: none !important;
+    border-radius: 12px !important;
+    padding: 0.8rem 1.8rem !important;
+    font-weight: 750 !important;
+    font-size: 0.95rem !important;
+    box-shadow: 0 8px 20px rgba(95,143,50,0.22);
     transition: 0.15s ease-in-out;
 }
 
 div.stButton > button:hover {
-    transform: translate(-2px, -2px);
-    box-shadow: 7px 7px 0 rgba(17,24,39,0.22);
+    background: #4f7d28 !important;
+    transform: translateY(-1px);
 }
 
-.result-score {
-    font-family: 'Gaegu', cursive;
-    font-size: 6rem;
-    line-height: 0.85;
-    font-weight: 700;
+.score {
+    font-size: 4.6rem;
+    line-height: 1;
+    font-weight: 800;
+    letter-spacing: -0.06em;
     margin: 0.4rem 0 0.7rem;
 }
 
@@ -188,14 +167,10 @@ div.stButton > button:hover {
 
 .badge {
     display: inline-flex;
-    align-items: center;
-    gap: 0.45rem;
-    border: 2px solid #111827;
     border-radius: 999px;
-    padding: 0.35rem 0.8rem;
-    font-weight: 800;
+    padding: 0.35rem 0.85rem;
+    font-weight: 750;
     font-size: 0.82rem;
-    box-shadow: 3px 3px 0 rgba(17,24,39,0.12);
 }
 
 .badge-low { background: #dcfce7; color: #166534; }
@@ -203,28 +178,66 @@ div.stButton > button:hover {
 .badge-high { background: #fee2e2; color: #991b1b; }
 
 .progress-wrap {
-    background: #f3f4f6;
-    border: 2px solid #111827;
+    background: #e5e7eb;
     border-radius: 999px;
-    height: 20px;
+    height: 14px;
     overflow: hidden;
     margin: 1rem 0 0.4rem;
 }
 
 .progress-fill {
     height: 100%;
-    border-right: 2px solid #111827;
+    border-radius: 999px;
+}
+
+.metric-row {
+    display: flex;
+    justify-content: space-between;
+    border-bottom: 1px solid #e5e7eb;
+    padding: 0.55rem 0;
+    gap: 1rem;
+}
+
+.metric-k {
+    color: #6b7280;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.76rem;
+}
+
+.metric-v {
+    font-weight: 700;
+    text-align: right;
+}
+
+.bar-row {
+    display: grid;
+    grid-template-columns: 90px 1fr 90px;
+    gap: 0.8rem;
+    align-items: center;
+    margin-bottom: 0.85rem;
+}
+
+.bar-track {
+    height: 18px;
+    background: #f3f4f6;
+    border-radius: 999px;
+    overflow: hidden;
+    border: 1px solid #d1d5db;
+}
+
+.bar-fill {
+    height: 100%;
+    border-radius: 999px;
 }
 
 .driver {
-    border-bottom: 1px dashed #9ca3af;
+    border-bottom: 1px solid #e5e7eb;
     padding: 0.72rem 0;
 }
 
 .driver-title {
-    font-weight: 800;
+    font-weight: 750;
     color: #111827;
-    margin-bottom: 0.18rem;
 }
 
 .driver-desc {
@@ -233,58 +246,10 @@ div.stButton > button:hover {
     line-height: 1.5;
 }
 
-.metric-row {
-    display: flex;
-    justify-content: space-between;
-    gap: 1rem;
-    border-bottom: 1px dashed #d1d5db;
-    padding: 0.5rem 0;
-}
-
-.metric-k {
-    color: #6b7280;
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 0.78rem;
-}
-
-.metric-v {
-    font-weight: 800;
-    text-align: right;
-}
-
-.axis-box {
-    border-left: 3px solid #111827;
-    border-bottom: 3px solid #111827;
-    padding: 1.2rem 0.8rem 0.8rem 1rem;
-    min-height: 220px;
-}
-
-.bar-row {
-    display: grid;
-    grid-template-columns: 95px 1fr 80px;
-    gap: 0.8rem;
-    align-items: center;
-    margin-bottom: 1rem;
-    font-size: 0.86rem;
-}
-
-.bar-track {
-    background: #f3f4f6;
-    border: 2px solid #111827;
-    border-radius: 999px;
-    overflow: hidden;
-    height: 23px;
-}
-
-.bar-fill {
-    height: 100%;
-    border-right: 2px solid #111827;
-}
-
 .footer-note {
     text-align: center;
     color: #6b7280;
-    font-family: 'JetBrains Mono', monospace;
+    font-family: 'IBM Plex Mono', monospace;
     font-size: 0.72rem;
     margin-top: 2rem;
 }
@@ -292,12 +257,24 @@ div.stButton > button:hover {
 """, unsafe_allow_html=True)
 
 
-# ── Helpers ──────────────────────────────────────────────────────────────────
+# ── Helper functions ─────────────────────────────────────────────────────────
+def esc(x):
+    return html.escape(str(x))
+
+
+def money(x):
+    return f"${x:,.0f}"
+
+
+def render_html(code):
+    st.markdown(code, unsafe_allow_html=True)
+
+
 def bodily_injuries_label_to_value(label):
     return {
         "None": 0,
         "One reported injury": 1,
-        "Multiple / serious injuries": 2
+        "Multiple / serious injuries": 2,
     }[label]
 
 
@@ -306,7 +283,7 @@ def witnesses_label_to_value(label):
         "No witnesses": 0,
         "One witness": 1,
         "Two witnesses": 2,
-        "Three or more witnesses": 3
+        "Three or more witnesses": 3,
     }[label]
 
 
@@ -335,56 +312,47 @@ def action_meta(fraud_prob):
     )
 
 
-def money(x):
-    return f"${x:,.0f}"
-
-
-def safe_text(x):
-    return html.escape(str(x))
-
-
-def bar(width, color):
-    width = max(0, min(100, width))
-    return f"""
-    <div class="bar-track">
-        <div class="bar-fill" style="width:{width}%; background:{color};"></div>
-    </div>
-    """
+def make_bar(label, value, width, color):
+    return (
+        f'<div class="bar-row">'
+        f'<div><b>{esc(label)}</b></div>'
+        f'<div class="bar-track"><div class="bar-fill" style="width:{width}%; background:{color};"></div></div>'
+        f'<div>{money(value)}</div>'
+        f'</div>'
+    )
 
 
 # ── Header ───────────────────────────────────────────────────────────────────
-st.markdown("""
-<div class="story-shell">
-    <div class="kicker">Machine Learning Portfolio Project</div>
-    <h1 class="hero-title">Insurance Fraud<br>Detection</h1>
-    <p class="hero-sub">
-        A clean claim-risk scoring app that turns claim details into a fraud probability,
-        risk band, and recommended review action.
-    </p>
-    <div class="dot-row">
-        <div class="dot red"></div>
-        <div class="dot orange"></div>
-        <div class="dot green"></div>
-        <div class="dot blue"></div>
-        <div class="dot purple"></div>
-    </div>
+render_html("""
+<div class="hero">
+  <div class="kicker">Machine Learning Portfolio Project</div>
+  <h1 class="hero-title">Insurance Fraud<br>Detection</h1>
+  <p class="hero-sub">
+    A clean claim-risk scoring app that turns claim details into a fraud probability,
+    risk band, and recommended review action.
+  </p>
+  <div class="dot-row">
+    <div class="dot red"></div>
+    <div class="dot orange"></div>
+    <div class="dot green"></div>
+    <div class="dot blue"></div>
+    <div class="dot purple"></div>
+  </div>
 </div>
-""", unsafe_allow_html=True)
+""")
 
 
 # ── Inputs ───────────────────────────────────────────────────────────────────
 left, right = st.columns(2, gap="large")
 
 with left:
-    st.markdown("""
-    <div class="story-card">
-        <div class="section-label">01 · Incident details</div>
-        <div class="story-heading">Show the claim event</div>
-        <div class="story-note">
-            These fields describe what happened during the reported incident.
-        </div>
-    </div>
-    """, unsafe_allow_html=True)
+    render_html("""
+<div class="card">
+  <div class="section-label">01 · Incident details</div>
+  <div class="heading">Show the claim event</div>
+  <div class="note">These fields describe what happened during the reported incident.</div>
+</div>
+""")
 
     incident_severity = st.selectbox(
         "Incident Severity",
@@ -424,52 +392,20 @@ with left:
     )
 
 with right:
-    st.markdown("""
-    <div class="story-card">
-        <div class="section-label">02 · Policy and claim values</div>
-        <div class="story-heading">Show the money data</div>
-        <div class="story-note">
-            These inputs describe the size and structure of the insurance claim.
-        </div>
-    </div>
-    """, unsafe_allow_html=True)
+    render_html("""
+<div class="card">
+  <div class="section-label">02 · Policy and claim values</div>
+  <div class="heading">Show the money data</div>
+  <div class="note">These inputs describe the size and structure of the insurance claim.</div>
+</div>
+""")
 
-    total_claim_amount = st.number_input(
-        "Total Claim Amount ($)",
-        min_value=0,
-        value=50000
-    )
-
-    injury_claim = st.number_input(
-        "Injury Claim ($)",
-        min_value=0,
-        value=5000
-    )
-
-    property_claim = st.number_input(
-        "Property Claim ($)",
-        min_value=0,
-        value=10000
-    )
-
-    vehicle_claim = st.number_input(
-        "Vehicle Claim ($)",
-        min_value=0,
-        value=35000
-    )
-
-    policy_annual_premium = st.number_input(
-        "Annual Premium ($)",
-        min_value=0.0,
-        value=1200.0,
-        step=10.0
-    )
-
-    policy_deductable = st.number_input(
-        "Policy Deductable ($)",
-        min_value=0,
-        value=1000
-    )
+    total_claim_amount = st.number_input("Total Claim Amount ($)", min_value=0, value=50000)
+    injury_claim = st.number_input("Injury Claim ($)", min_value=0, value=5000)
+    property_claim = st.number_input("Property Claim ($)", min_value=0, value=10000)
+    vehicle_claim = st.number_input("Vehicle Claim ($)", min_value=0, value=35000)
+    policy_annual_premium = st.number_input("Annual Premium ($)", min_value=0.0, value=1200.0, step=10.0)
+    policy_deductable = st.number_input("Policy Deductable ($)", min_value=0, value=1000)
 
 predict = st.button("Run Fraud Assessment →")
 
@@ -502,184 +438,132 @@ if predict:
 
     st.markdown("<br>", unsafe_allow_html=True)
 
-    result_col, action_col = st.columns([1, 1], gap="large")
+    result_col, action_col = st.columns(2, gap="large")
 
     with result_col:
-        st.markdown(f"""
-        <div class="story-card">
-            <div class="section-label">03 · Model output</div>
-            <div class="story-heading">Show the fraud risk</div>
-            <div class="story-note">
-                The model converts the claim information into a fraud probability score.
-            </div>
-
-            <p class="result-score {text_cls}">{pct:.0f}%</p>
-
-            <div class="progress-wrap">
-                <div class="progress-fill" style="width:{pct}%; background:{risk_color};"></div>
-            </div>
-
-            <div class="metric-row">
-                <span class="metric-k">Decision threshold</span>
-                <span class="metric-v">{int(THRESHOLD * 100)}%</span>
-            </div>
-            <div class="metric-row">
-                <span class="metric-k">Prediction</span>
-                <span class="metric-v">{safe_text(verdict)}</span>
-            </div>
-
-            <br>
-            <span class="badge {badge_cls}">● {safe_text(risk_label)}</span>
-        </div>
-        """, unsafe_allow_html=True)
+        render_html(f"""
+<div class="card">
+  <div class="section-label">03 · Model output</div>
+  <div class="heading">Show the fraud risk</div>
+  <div class="note">The model converts the claim information into a fraud probability score.</div>
+  <div class="score {text_cls}">{pct:.0f}%</div>
+  <div class="progress-wrap">
+    <div class="progress-fill" style="width:{pct}%; background:{risk_color};"></div>
+  </div>
+  <div class="metric-row">
+    <span class="metric-k">Decision threshold</span>
+    <span class="metric-v">{int(THRESHOLD * 100)}%</span>
+  </div>
+  <div class="metric-row">
+    <span class="metric-k">Prediction</span>
+    <span class="metric-v">{esc(verdict)}</span>
+  </div>
+  <br>
+  <span class="badge {badge_cls}">● {esc(risk_label)}</span>
+</div>
+""")
 
     with action_col:
-        st.markdown(f"""
-        <div class="story-card">
-            <div class="section-label">04 · Recommended decision</div>
-            <div class="story-heading">Show the action</div>
-            <div class="story-note">
-                The app does not replace human review. It supports triage and prioritization.
-            </div>
+        render_html(f"""
+<div class="card">
+  <div class="section-label">04 · Recommended decision</div>
+  <div class="heading">Show the action</div>
+  <div class="note">The app does not replace human review. It supports triage and prioritization.</div>
+  <h3 style="margin-top:1rem; font-size:1.35rem;">{esc(action_title)}</h3>
+  <p style="color:#4b5563; line-height:1.7;">{esc(action_desc)}</p>
+  <div class="metric-row">
+    <span class="metric-k">Model</span>
+    <span class="metric-v">Random Forest</span>
+  </div>
+  <div class="metric-row">
+    <span class="metric-k">Features</span>
+    <span class="metric-v">12 deployment inputs</span>
+  </div>
+  <div class="metric-row">
+    <span class="metric-k">Purpose</span>
+    <span class="metric-v">Portfolio demo</span>
+  </div>
+</div>
+""")
 
-            <h3 style="margin-top:1rem; font-size:1.45rem;">{safe_text(action_title)}</h3>
-            <p style="color:#4b5563; line-height:1.7;">{safe_text(action_desc)}</p>
-
-            <div class="metric-row">
-                <span class="metric-k">Model</span>
-                <span class="metric-v">Random Forest</span>
-            </div>
-            <div class="metric-row">
-                <span class="metric-k">Features</span>
-                <span class="metric-v">12 deployment inputs</span>
-            </div>
-            <div class="metric-row">
-                <span class="metric-k">Purpose</span>
-                <span class="metric-v">Portfolio demo</span>
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
-
-    # ── Claim composition chart ───────────────────────────────────────────────
     other = max(0, total_claim_amount - injury_claim - property_claim - vehicle_claim)
     max_claim = max(injury_claim, property_claim, vehicle_claim, other, 1)
 
-    injury_w = injury_claim / max_claim * 100
-    property_w = property_claim / max_claim * 100
-    vehicle_w = vehicle_claim / max_claim * 100
-    other_w = other / max_claim * 100
+    injury_w = round(injury_claim / max_claim * 100, 1)
+    property_w = round(property_claim / max_claim * 100, 1)
+    vehicle_w = round(vehicle_claim / max_claim * 100, 1)
+    other_w = round(other / max_claim * 100, 1)
 
     st.markdown("<br>", unsafe_allow_html=True)
 
     chart_col, driver_col = st.columns([1.2, 0.8], gap="large")
 
     with chart_col:
-        st.markdown(f"""
-        <div class="story-card">
-            <div class="section-label">05 · Claim composition</div>
-            <div class="story-heading">Show the data clearly</div>
-            <div class="story-note">
-                The claim is broken into injury, property, vehicle, and remaining claim amount.
-            </div>
+        bars_html = (
+            make_bar("Injury", injury_claim, injury_w, "#ef4444") +
+            make_bar("Property", property_claim, property_w, "#f97316") +
+            make_bar("Vehicle", vehicle_claim, vehicle_w, "#38bdf8") +
+            make_bar("Other", other, other_w, "#a855f7")
+        )
 
-            <div class="axis-box">
-                <div class="bar-row">
-                    <div><b>Injury</b></div>
-                    {bar(injury_w, "#ef4444")}
-                    <div>{money(injury_claim)}</div>
-                </div>
-
-                <div class="bar-row">
-                    <div><b>Property</b></div>
-                    {bar(property_w, "#f97316")}
-                    <div>{money(property_claim)}</div>
-                </div>
-
-                <div class="bar-row">
-                    <div><b>Vehicle</b></div>
-                    {bar(vehicle_w, "#38bdf8")}
-                    <div>{money(vehicle_claim)}</div>
-                </div>
-
-                <div class="bar-row">
-                    <div><b>Other</b></div>
-                    {bar(other_w, "#a855f7")}
-                    <div>{money(other)}</div>
-                </div>
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
+        render_html(f"""
+<div class="card">
+  <div class="section-label">05 · Claim composition</div>
+  <div class="heading">Show the data clearly</div>
+  <div class="note">The claim is broken into injury, property, vehicle, and remaining claim amount.</div>
+  {bars_html}
+</div>
+""")
 
     with driver_col:
         risk_drivers = []
 
         if incident_severity in ["Major Damage", "Total Loss"]:
-            risk_drivers.append((
-                "High incident severity",
-                "Major damage or total loss can increase claim risk."
-            ))
+            risk_drivers.append(("High incident severity", "Major damage or total loss can increase claim risk."))
 
         if total_claim_amount >= 60000:
-            risk_drivers.append((
-                "Large total claim",
-                "The total claim amount is above $60,000."
-            ))
+            risk_drivers.append(("Large total claim", "The total claim amount is above $60,000."))
 
         if number_of_vehicles_involved >= 2:
-            risk_drivers.append((
-                "Multiple vehicles involved",
-                "Multi-vehicle claims can be more complex to validate."
-            ))
+            risk_drivers.append(("Multiple vehicles involved", "Multi-vehicle claims can be more complex to validate."))
 
         if bodily_injuries >= 1:
-            risk_drivers.append((
-                "Reported bodily injuries",
-                "Injury-related claims may require additional verification."
-            ))
+            risk_drivers.append(("Reported bodily injuries", "Injury-related claims may require additional verification."))
 
         if witnesses >= 2:
-            risk_drivers.append((
-                "High witness count",
-                "A high witness count can be a useful review signal."
-            ))
+            risk_drivers.append(("High witness count", "A high witness count can be a useful review signal."))
 
         if months_as_customer < 24:
-            risk_drivers.append((
-                "Short customer tenure",
-                "Newer policies may require closer claim review."
-            ))
-
-        driver_html = ""
+            risk_drivers.append(("Short customer tenure", "Newer policies may require closer claim review."))
 
         if not risk_drivers:
-            driver_html = """
-            <div class="driver">
-                <div class="driver-title">No major risk indicators</div>
-                <div class="driver-desc">The entered values did not trigger the main rule-based risk notes.</div>
-            </div>
-            """
+            drivers_html = """
+<div class="driver">
+  <div class="driver-title">No major risk indicators</div>
+  <div class="driver-desc">The entered values did not trigger the main rule-based risk notes.</div>
+</div>
+"""
         else:
+            drivers_html = ""
             for title, desc in risk_drivers:
-                driver_html += f"""
-                <div class="driver">
-                    <div class="driver-title">{safe_text(title)}</div>
-                    <div class="driver-desc">{safe_text(desc)}</div>
-                </div>
-                """
+                drivers_html += f"""
+<div class="driver">
+  <div class="driver-title">{esc(title)}</div>
+  <div class="driver-desc">{esc(desc)}</div>
+</div>
+"""
 
-        st.markdown(f"""
-        <div class="story-card">
-            <div class="section-label">06 · Risk drivers</div>
-            <div class="story-heading">Show the why</div>
-            <div class="story-note">
-                These notes explain which entered values may have contributed to the review decision.
-            </div>
-            {driver_html}
-        </div>
-        """, unsafe_allow_html=True)
+        render_html(f"""
+<div class="card">
+  <div class="section-label">06 · Risk drivers</div>
+  <div class="heading">Show the why</div>
+  <div class="note">These notes explain which entered values may have contributed to the review decision.</div>
+  {drivers_html}
+</div>
+""")
 
-    st.markdown("""
-    <p class="footer-note">
-        Portfolio demonstration · The model supports human review and should not be used as the only decision-maker.
-    </p>
-    """, unsafe_allow_html=True)
+    render_html("""
+<p class="footer-note">
+Portfolio demonstration · The model supports human review and should not be used as the only decision-maker.
+</p>
+""")

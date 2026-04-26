@@ -1,990 +1,685 @@
 import streamlit as st
 import pandas as pd
 import joblib
+import html
 
 # ── Load model ──────────────────────────────────────────────────────────────
-model        = joblib.load("deploy_fraud_model.pkl")
+model = joblib.load("deploy_fraud_model.pkl")
 template_row = joblib.load("deploy_input_template.pkl")
-THRESHOLD    = 0.25
+THRESHOLD = 0.25
 
 # ── Page config ──────────────────────────────────────────────────────────────
 st.set_page_config(
     page_title="Insurance Fraud Detection",
-    page_icon="◎",
+    page_icon="📊",
     layout="wide",
 )
 
-# ── MASTER CSS ────────────────────────────────────────────────────────────────
+# ── Theme CSS ────────────────────────────────────────────────────────────────
 st.markdown("""
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,700;0,9..144,900;1,9..144,400&family=JetBrains+Mono:wght@400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Gaegu:wght@400;700&family=JetBrains+Mono:wght@400;600&display=swap');
 
-/* ══════════════════════════════════════════════
-   GLOBAL
-══════════════════════════════════════════════ */
 html, body, [class*="css"] {
-    font-family: 'Plus Jakarta Sans', sans-serif !important;
-    color: #1a1a2e !important;
+    font-family: 'Inter', sans-serif !important;
+    color: #111827 !important;
 }
 
 .stApp {
-    background: linear-gradient(145deg,
-        #e8f4fd 0%,
-        #f0e8ff 25%,
-        #fce4ec 50%,
-        #e8f5e9 75%,
-        #fff8e1 100%);
-    background-attachment: fixed;
-    min-height: 100vh;
-}
-
-/* Subtle animated mesh overlay */
-.stApp::before {
-    content: '';
-    position: fixed;
-    inset: 0;
     background:
-        radial-gradient(ellipse 60% 50% at 20% 20%, rgba(167,139,250,0.12) 0%, transparent 60%),
-        radial-gradient(ellipse 50% 60% at 80% 70%, rgba(96,165,250,0.10) 0%, transparent 60%),
-        radial-gradient(ellipse 40% 40% at 60% 10%, rgba(251,191,36,0.08) 0%, transparent 60%);
-    pointer-events: none;
-    z-index: 0;
-    animation: meshShift 18s ease-in-out infinite alternate;
-}
-
-@keyframes meshShift {
-    0%   { opacity: 0.7; transform: scale(1); }
-    100% { opacity: 1;   transform: scale(1.04); }
+        radial-gradient(circle at 15% 12%, rgba(239, 68, 68, 0.05), transparent 26%),
+        radial-gradient(circle at 88% 20%, rgba(34, 197, 94, 0.06), transparent 24%),
+        radial-gradient(circle at 70% 85%, rgba(59, 130, 246, 0.06), transparent 24%),
+        #faf8f1;
 }
 
 .main .block-container {
-    padding: 3rem 3rem 6rem;
-    max-width: 1200px;
-    position: relative;
-    z-index: 1;
+    max-width: 1180px;
+    padding: 2.8rem 2.3rem 5rem;
 }
 
-/* ══════════════════════════════════════════════
-   ANIMATIONS
-══════════════════════════════════════════════ */
-@keyframes fadeUp {
-    from { opacity: 0; transform: translateY(24px); }
-    to   { opacity: 1; transform: translateY(0); }
-}
-@keyframes fadeIn {
-    from { opacity: 0; }
-    to   { opacity: 1; }
-}
-@keyframes slideRight {
-    from { opacity: 0; transform: translateX(-20px); }
-    to   { opacity: 1; transform: translateX(0); }
-}
-@keyframes popIn {
-    0%   { opacity: 0; transform: scale(0.88); }
-    70%  { transform: scale(1.03); }
-    100% { opacity: 1; transform: scale(1); }
-}
-@keyframes barFill {
-    from { width: 0%; }
-    to   { width: var(--bar-w); }
-}
-@keyframes shimmer {
-    0%   { background-position: -200% center; }
-    100% { background-position:  200% center; }
-}
-@keyframes float {
-    0%, 100% { transform: translateY(0px); }
-    50%       { transform: translateY(-4px); }
+[data-testid="stHeader"] {
+    background: transparent;
 }
 
-/* ══════════════════════════════════════════════
-   HEADER
-══════════════════════════════════════════════ */
-.hdr-tag {
+.story-shell {
+    background: rgba(255,255,255,0.72);
+    border: 2px solid #111827;
+    border-radius: 28px;
+    padding: 2rem 2rem 1.6rem;
+    box-shadow: 8px 8px 0 rgba(17,24,39,0.13);
+    margin-bottom: 1.5rem;
+}
+
+.kicker {
     font-family: 'JetBrains Mono', monospace;
-    font-size: 0.68rem;
-    letter-spacing: 0.22em;
+    font-size: 0.74rem;
+    letter-spacing: 0.18em;
     text-transform: uppercase;
-    color: #7c6fcd;
-    margin: 0 0 0.7rem;
-    animation: fadeUp 0.5s ease both;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-}
-.hdr-tag::before {
-    content: '';
-    display: inline-block;
-    width: 6px; height: 6px;
-    border-radius: 50%;
-    background: #7c6fcd;
-    animation: float 2.5s ease-in-out infinite;
+    color: #6b7280;
+    margin-bottom: 0.55rem;
 }
 
-.hdr-title {
-    font-family: 'Fraunces', Georgia, serif;
-    font-size: clamp(2.4rem, 4.5vw, 3.6rem);
-    font-weight: 900;
-    color: #1a1a2e;
-    line-height: 1.05;
-    margin: 0 0 0.6rem;
-    letter-spacing: -1.5px;
-    animation: fadeUp 0.55s 0.07s ease both;
-}
-
-.hdr-sub {
-    font-family: 'Plus Jakarta Sans', sans-serif;
-    font-size: 0.9rem;
-    font-weight: 300;
-    color: #64748b;
-    margin: 0 0 2.8rem;
-    animation: fadeUp 0.55s 0.14s ease both;
-    letter-spacing: 0.01em;
-}
-
-.hdr-divider {
-    height: 2px;
-    background: linear-gradient(90deg, #a78bfa, #60a5fa, #fb7185, transparent);
-    border-radius: 1px;
-    margin-bottom: 0.8rem;
-    animation: fadeIn 0.8s 0.2s ease both;
-}
-
-/* ══════════════════════════════════════════════
-   GLASS CARD — the core component
-══════════════════════════════════════════════ */
-.glass-panel {
-    background: rgba(255, 255, 255, 0.52);
-    backdrop-filter: blur(22px) saturate(160%);
-    -webkit-backdrop-filter: blur(22px) saturate(160%);
-    border: 1.5px solid rgba(255, 255, 255, 0.75);
-    border-radius: 20px;
-    padding: 1.8rem 2rem 1.5rem;
-    margin-bottom: 1rem;
-    box-shadow:
-        0 4px 24px rgba(124, 111, 205, 0.08),
-        0 1px 0 rgba(255,255,255,0.9) inset,
-        0 -1px 0 rgba(0,0,0,0.03) inset;
-    animation: fadeUp 0.5s 0.2s ease both;
-    transition: box-shadow 0.25s ease, transform 0.25s ease;
-}
-.glass-panel:hover {
-    box-shadow:
-        0 10px 40px rgba(124, 111, 205, 0.14),
-        0 1px 0 rgba(255,255,255,0.9) inset;
-    transform: translateY(-2px);
-}
-
-.panel-title {
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 0.64rem;
-    letter-spacing: 0.22em;
-    text-transform: uppercase;
-    color: #94a3b8;
-    margin: 0 0 1.3rem;
-    padding-bottom: 0.7rem;
-    border-bottom: 1px solid rgba(148, 163, 184, 0.2);
-    display: flex;
-    align-items: center;
-    gap: 0.6rem;
-}
-.panel-title-dot {
-    width: 7px; height: 7px;
-    border-radius: 50%;
-    display: inline-block;
-    flex-shrink: 0;
-}
-
-/* ══════════════════════════════════════════════
-   STREAMLIT WIDGET OVERRIDES — HIGH CONTRAST
-══════════════════════════════════════════════ */
-
-/* ALL labels — dark, readable */
-label,
-.stSelectbox > label,
-.stNumberInput > label,
-.stSlider > label,
-.stSelectSlider > label,
-div[data-testid="stWidgetLabel"] > label,
-div[data-testid="stWidgetLabel"] p {
-    font-family: 'Plus Jakarta Sans', sans-serif !important;
-    font-size: 0.8rem !important;
-    font-weight: 600 !important;
-    color: #374151 !important;
-    letter-spacing: 0.01em !important;
-    text-transform: none !important;
-    margin-bottom: 0.2rem !important;
-}
-
-/* Selectbox container */
-div[data-baseweb="select"] {
-    border-radius: 12px !important;
-}
-div[data-baseweb="select"] > div {
-    background: rgba(255,255,255,0.88) !important;
-    border: 2px solid rgba(148,163,184,0.45) !important;
-    border-radius: 12px !important;
-    color: #1a1a2e !important;
-    font-family: 'Plus Jakarta Sans', sans-serif !important;
-    font-size: 0.9rem !important;
-    font-weight: 500 !important;
-    min-height: 46px !important;
-    padding-left: 14px !important;
-    transition: border-color 0.2s, box-shadow 0.2s !important;
-    cursor: pointer !important;
-}
-div[data-baseweb="select"] > div:hover {
-    border-color: #a78bfa !important;
-    box-shadow: 0 0 0 3px rgba(167,139,250,0.15) !important;
-}
-div[data-baseweb="select"] > div:focus-within {
-    border-color: #7c6fcd !important;
-    box-shadow: 0 0 0 3px rgba(124,111,205,0.2) !important;
-}
-
-/* Dropdown chevron — make it visible */
-div[data-baseweb="select"] svg {
-    color: #7c6fcd !important;
-    opacity: 1 !important;
-    width: 18px !important;
-    height: 18px !important;
-}
-
-/* Selected text value inside select */
-div[data-baseweb="select"] [data-testid="stMarkdownContainer"] p,
-div[data-baseweb="select"] span,
-div[data-baseweb="select"] div {
-    color: #1a1a2e !important;
-    font-weight: 500 !important;
-}
-
-/* Dropdown menu options */
-[data-baseweb="menu"] {
-    background: rgba(255,255,255,0.97) !important;
-    border: 1.5px solid rgba(167,139,250,0.3) !important;
-    border-radius: 12px !important;
-    box-shadow: 0 16px 40px rgba(0,0,0,0.12) !important;
-    backdrop-filter: blur(20px) !important;
-}
-[data-baseweb="option"] {
-    font-family: 'Plus Jakarta Sans', sans-serif !important;
-    font-size: 0.88rem !important;
-    color: #1a1a2e !important;
-    padding: 10px 16px !important;
-    transition: background 0.15s !important;
-}
-[data-baseweb="option"]:hover,
-[data-baseweb="option"][aria-selected="true"] {
-    background: rgba(167,139,250,0.15) !important;
-    color: #5b21b6 !important;
-}
-
-/* Number inputs */
-[data-testid="stNumberInput"] input {
-    background: rgba(255,255,255,0.88) !important;
-    border: 2px solid rgba(148,163,184,0.45) !important;
-    border-radius: 12px !important;
-    color: #1a1a2e !important;
-    font-family: 'Plus Jakarta Sans', sans-serif !important;
-    font-size: 0.9rem !important;
-    font-weight: 500 !important;
-    height: 46px !important;
-    padding-left: 14px !important;
-    transition: border-color 0.2s, box-shadow 0.2s !important;
-}
-[data-testid="stNumberInput"] input:focus {
-    border-color: #7c6fcd !important;
-    box-shadow: 0 0 0 3px rgba(124,111,205,0.2) !important;
-    outline: none !important;
-}
-[data-testid="stNumberInput"] input::placeholder {
-    color: #94a3b8 !important;
-}
-[data-testid="stNumberInput"] button {
-    background: rgba(255,255,255,0.7) !important;
-    border: 1.5px solid rgba(148,163,184,0.3) !important;
-    color: #7c6fcd !important;
-    border-radius: 8px !important;
-    font-size: 1.1rem !important;
-    font-weight: 600 !important;
-}
-[data-testid="stNumberInput"] button:hover {
-    background: rgba(167,139,250,0.2) !important;
-    border-color: #a78bfa !important;
-}
-
-/* Sliders */
-[data-testid="stSlider"] [role="slider"] {
-    background: #7c6fcd !important;
-    border: 2px solid white !important;
-    box-shadow: 0 2px 8px rgba(124,111,205,0.4) !important;
-}
-[data-testid="stSlider"] [data-testid="stTickBarMin"],
-[data-testid="stSlider"] [data-testid="stTickBarMax"] {
-    color: #94a3b8 !important;
-    font-size: 0.75rem !important;
-}
-
-/* Select slider */
-[data-testid="stSelectSlider"] [role="slider"] {
-    background: #7c6fcd !important;
-    border: 2px solid white !important;
-    box-shadow: 0 2px 8px rgba(124,111,205,0.4) !important;
-}
-[data-testid="stSelectSlider"] p {
-    color: #374151 !important;
-    font-size: 0.8rem !important;
-}
-
-/* ══════════════════════════════════════════════
-   CTA BUTTON
-══════════════════════════════════════════════ */
-div.stButton > button {
-    background: linear-gradient(135deg, #7c6fcd 0%, #a78bfa 50%, #60a5fa 100%) !important;
-    background-size: 200% 200% !important;
-    color: #fff !important;
-    border: none !important;
-    border-radius: 14px !important;
-    font-family: 'Plus Jakarta Sans', sans-serif !important;
-    font-size: 0.9rem !important;
-    font-weight: 700 !important;
-    letter-spacing: 0.04em !important;
-    padding: 0.75rem 2.8rem !important;
-    margin-top: 0.6rem !important;
-    box-shadow: 0 4px 20px rgba(124,111,205,0.35) !important;
-    transition: transform 0.18s, box-shadow 0.18s, background-position 0.4s !important;
-    cursor: pointer !important;
-    animation: fadeIn 0.5s 0.35s ease both !important;
-}
-div.stButton > button:hover {
-    transform: translateY(-2px) !important;
-    box-shadow: 0 10px 32px rgba(124,111,205,0.45) !important;
-    background-position: right center !important;
-}
-div.stButton > button:active {
-    transform: translateY(0) scale(0.98) !important;
-}
-
-/* ══════════════════════════════════════════════
-   RESULT COMPONENTS
-══════════════════════════════════════════════ */
-
-/* Big score card */
-.score-card {
-    background: rgba(255,255,255,0.6);
-    backdrop-filter: blur(24px) saturate(160%);
-    -webkit-backdrop-filter: blur(24px) saturate(160%);
-    border: 1.5px solid rgba(255,255,255,0.8);
-    border-radius: 22px;
-    padding: 2.2rem 2.4rem 2rem;
-    box-shadow: 0 8px 40px rgba(0,0,0,0.08), 0 1px 0 rgba(255,255,255,0.95) inset;
-    position: relative;
-    overflow: hidden;
-    animation: popIn 0.6s cubic-bezier(0.22,1,0.36,1) both;
-}
-
-.score-card::before {
-    content: '';
-    position: absolute;
-    top: 0; left: 0; right: 0;
-    height: 4px;
-    border-radius: 22px 22px 0 0;
-}
-.score-card.low::before    { background: linear-gradient(90deg, #34d399, #6ee7b7); }
-.score-card.medium::before { background: linear-gradient(90deg, #fbbf24, #fde68a); }
-.score-card.high::before   { background: linear-gradient(90deg, #f87171, #fca5a5); }
-
-.score-eyebrow {
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 0.65rem;
-    letter-spacing: 0.2em;
-    text-transform: uppercase;
-    color: #94a3b8;
-    margin: 0 0 0.5rem;
-}
-
-.score-number {
-    font-family: 'Fraunces', serif;
-    font-size: 6rem;
-    font-weight: 900;
-    line-height: 1;
+.hero-title {
+    font-family: 'Gaegu', cursive;
+    font-size: clamp(3.1rem, 7vw, 5.2rem);
+    line-height: 0.88;
+    font-weight: 700;
     margin: 0;
-    letter-spacing: -3px;
-    animation: popIn 0.65s 0.1s cubic-bezier(0.22,1,0.36,1) both;
-}
-.score-number.low    { color: #059669; }
-.score-number.medium { color: #d97706; }
-.score-number.high   { color: #dc2626; }
-
-/* Animated progress bar */
-.prog-track {
-    width: 100%;
-    height: 6px;
-    background: rgba(148,163,184,0.18);
-    border-radius: 3px;
-    margin: 1.1rem 0 0.4rem;
-    overflow: hidden;
-}
-.prog-fill {
-    height: 100%;
-    border-radius: 3px;
-    animation: progAnim 1.2s cubic-bezier(0.22,1,0.36,1) both;
-    animation-delay: 0.15s;
-}
-.prog-fill.low    { background: linear-gradient(90deg, #34d399, #6ee7b7); }
-.prog-fill.medium { background: linear-gradient(90deg, #fbbf24, #fde68a); }
-.prog-fill.high   { background: linear-gradient(90deg, #f87171, #fca5a5); }
-
-@keyframes progAnim {
-    from { width: 0%; }
+    color: #111827;
 }
 
-.prog-labels {
-    display: flex;
-    justify-content: space-between;
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 0.62rem;
-    color: #94a3b8;
-    letter-spacing: 0.06em;
-    margin-bottom: 0.9rem;
-}
-
-.score-verdict {
-    font-family: 'Plus Jakarta Sans', sans-serif;
+.hero-sub {
+    max-width: 780px;
+    color: #4b5563;
     font-size: 1rem;
-    font-weight: 600;
-    color: #1a1a2e;
-    margin: 0 0 0.6rem;
+    line-height: 1.7;
+    margin-top: 1rem;
 }
 
-/* Risk badge */
-.risk-badge {
+.story-card {
+    background: #ffffff;
+    border: 2px solid #111827;
+    border-radius: 22px;
+    padding: 1.4rem 1.45rem;
+    box-shadow: 5px 5px 0 rgba(17,24,39,0.11);
+    margin-bottom: 1rem;
+}
+
+.story-heading {
+    font-family: 'Gaegu', cursive;
+    font-size: 2.35rem;
+    font-weight: 700;
+    line-height: 1;
+    margin-bottom: 0.75rem;
+}
+
+.story-note {
+    color: #6b7280;
+    font-size: 0.9rem;
+    line-height: 1.55;
+    margin-bottom: 1rem;
+}
+
+.section-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.16em;
+    color: #6b7280;
+    margin-bottom: 0.8rem;
+}
+
+.dot-row {
+    display: flex;
+    gap: 0.55rem;
+    margin: 1rem 0 0.3rem;
+}
+
+.dot {
+    width: 13px;
+    height: 13px;
+    border-radius: 50%;
+    border: 2px solid #111827;
+}
+
+.red { background: #ef4444; }
+.orange { background: #f97316; }
+.green { background: #22c55e; }
+.blue { background: #38bdf8; }
+.purple { background: #a855f7; }
+
+label,
+div[data-testid="stWidgetLabel"] p {
+    font-weight: 700 !important;
+    color: #111827 !important;
+    font-size: 0.88rem !important;
+}
+
+div[data-baseweb="select"] > div,
+[data-testid="stNumberInput"] input {
+    background: #fffdf8 !important;
+    border: 2px solid #111827 !important;
+    border-radius: 14px !important;
+    min-height: 44px !important;
+    box-shadow: 3px 3px 0 rgba(17,24,39,0.10);
+}
+
+div[data-baseweb="select"] > div:hover,
+[data-testid="stNumberInput"] input:focus {
+    box-shadow: 4px 4px 0 rgba(17,24,39,0.16) !important;
+    border-color: #111827 !important;
+}
+
+[data-testid="stSlider"] [role="slider"],
+[data-testid="stSelectSlider"] [role="slider"] {
+    background: #6a9f37 !important;
+    border: 2px solid #111827 !important;
+}
+
+div.stButton > button {
+    background: #6a9f37 !important;
+    color: white !important;
+    border: 2px solid #111827 !important;
+    border-radius: 18px !important;
+    padding: 0.85rem 2.4rem !important;
+    font-weight: 800 !important;
+    font-size: 1rem !important;
+    box-shadow: 5px 5px 0 rgba(17,24,39,0.20);
+    transition: 0.15s ease-in-out;
+}
+
+div.stButton > button:hover {
+    transform: translate(-2px, -2px);
+    box-shadow: 7px 7px 0 rgba(17,24,39,0.22);
+}
+
+.result-score {
+    font-family: 'Gaegu', cursive;
+    font-size: 6rem;
+    line-height: 0.85;
+    font-weight: 700;
+    margin: 0.4rem 0 0.7rem;
+}
+
+.low-text { color: #15803d; }
+.medium-text { color: #d97706; }
+.high-text { color: #dc2626; }
+
+.badge {
     display: inline-flex;
     align-items: center;
-    gap: 0.4rem;
-    font-family: 'Plus Jakarta Sans', sans-serif;
-    font-size: 0.75rem;
-    font-weight: 600;
-    padding: 0.3rem 0.9rem;
+    gap: 0.45rem;
+    border: 2px solid #111827;
     border-radius: 999px;
-    letter-spacing: 0.03em;
+    padding: 0.35rem 0.8rem;
+    font-weight: 800;
+    font-size: 0.82rem;
+    box-shadow: 3px 3px 0 rgba(17,24,39,0.12);
 }
-.risk-badge::before {
-    content: '';
-    width: 6px; height: 6px;
-    border-radius: 50%;
-    flex-shrink: 0;
-}
-.badge-low    { color: #065f46; background: #d1fae5; }
-.badge-low::before    { background: #059669; }
-.badge-medium { color: #92400e; background: #fef3c7; }
-.badge-medium::before { background: #d97706; }
-.badge-high   { color: #991b1b; background: #fee2e2; }
-.badge-high::before   { background: #dc2626; }
 
-/* Action card */
-.action-card {
-    background: rgba(255,255,255,0.6);
-    backdrop-filter: blur(24px) saturate(160%);
-    -webkit-backdrop-filter: blur(24px) saturate(160%);
-    border: 1.5px solid rgba(255,255,255,0.8);
-    border-radius: 22px;
-    padding: 2.2rem 2.2rem;
-    box-shadow: 0 8px 40px rgba(0,0,0,0.08), 0 1px 0 rgba(255,255,255,0.95) inset;
-    animation: popIn 0.6s 0.1s cubic-bezier(0.22,1,0.36,1) both;
+.badge-low { background: #dcfce7; color: #166534; }
+.badge-medium { background: #fef3c7; color: #92400e; }
+.badge-high { background: #fee2e2; color: #991b1b; }
+
+.progress-wrap {
+    background: #f3f4f6;
+    border: 2px solid #111827;
+    border-radius: 999px;
+    height: 20px;
+    overflow: hidden;
+    margin: 1rem 0 0.4rem;
+}
+
+.progress-fill {
     height: 100%;
-    box-sizing: border-box;
+    border-right: 2px solid #111827;
 }
 
-.action-chip {
-    display: inline-block;
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 0.62rem;
-    letter-spacing: 0.15em;
-    text-transform: uppercase;
-    padding: 0.22rem 0.7rem;
-    border-radius: 6px;
-    margin-bottom: 0.9rem;
-}
-.chip-low    { background: #d1fae5; color: #065f46; }
-.chip-medium { background: #fef3c7; color: #92400e; }
-.chip-high   { background: #fee2e2; color: #991b1b; }
-
-.action-headline {
-    font-family: 'Fraunces', serif;
-    font-size: 1.55rem;
-    font-weight: 700;
-    color: #1a1a2e;
-    line-height: 1.2;
-    margin: 0 0 0.9rem;
+.driver {
+    border-bottom: 1px dashed #9ca3af;
+    padding: 0.72rem 0;
 }
 
-.action-desc {
-    font-family: 'Plus Jakarta Sans', sans-serif;
-    font-size: 0.88rem;
-    font-weight: 400;
-    color: #4b5563;
-    line-height: 1.75;
-    margin: 0;
-}
-
-/* ══════════════════════════════════════════════
-   CHART & DRIVERS
-══════════════════════════════════════════════ */
-.chart-glass {
-    background: rgba(255,255,255,0.6);
-    backdrop-filter: blur(22px) saturate(150%);
-    -webkit-backdrop-filter: blur(22px) saturate(150%);
-    border: 1.5px solid rgba(255,255,255,0.8);
-    border-radius: 20px;
-    padding: 1.8rem 2rem;
-    box-shadow: 0 4px 24px rgba(0,0,0,0.06), 0 1px 0 rgba(255,255,255,0.9) inset;
-    animation: fadeUp 0.5s 0.25s ease both;
-}
-
-.drivers-glass {
-    background: rgba(255,255,255,0.6);
-    backdrop-filter: blur(22px) saturate(150%);
-    -webkit-backdrop-filter: blur(22px) saturate(150%);
-    border: 1.5px solid rgba(255,255,255,0.8);
-    border-radius: 20px;
-    padding: 1.8rem 2rem;
-    box-shadow: 0 4px 24px rgba(0,0,0,0.06), 0 1px 0 rgba(255,255,255,0.9) inset;
-    animation: fadeUp 0.5s 0.3s ease both;
-}
-
-.driver-item {
-    display: flex;
-    align-items: flex-start;
-    gap: 0.8rem;
-    padding: 0.75rem 0;
-    border-bottom: 1px solid rgba(148,163,184,0.12);
-    animation: slideRight 0.4s ease both;
-}
-.driver-dot {
-    width: 8px; height: 8px;
-    border-radius: 50%;
-    background: linear-gradient(135deg, #a78bfa, #7c6fcd);
-    flex-shrink: 0;
-    margin-top: 0.42rem;
-    box-shadow: 0 0 6px rgba(167,139,250,0.5);
-}
 .driver-title {
-    font-family: 'Plus Jakarta Sans', sans-serif;
-    font-size: 0.85rem;
-    font-weight: 600;
-    color: #1a1a2e;
-    margin-bottom: 0.15rem;
+    font-weight: 800;
+    color: #111827;
+    margin-bottom: 0.18rem;
 }
+
 .driver-desc {
-    font-family: 'Plus Jakarta Sans', sans-serif;
-    font-size: 0.78rem;
-    color: #64748b;
+    color: #6b7280;
+    font-size: 0.86rem;
     line-height: 1.5;
 }
 
-.minfo {
-    margin-top: 1.4rem;
-    padding-top: 1rem;
-    border-top: 1px solid rgba(148,163,184,0.15);
-}
-.minfo-row {
+.metric-row {
     display: flex;
     justify-content: space-between;
-    padding: 0.3rem 0;
-    border-bottom: 1px solid rgba(148,163,184,0.08);
-}
-.minfo-k {
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 0.7rem;
-    color: #94a3b8;
-    letter-spacing: 0.04em;
-}
-.minfo-v {
-    font-family: 'Plus Jakarta Sans', sans-serif;
-    font-size: 0.8rem;
-    font-weight: 500;
-    color: #374151;
+    gap: 1rem;
+    border-bottom: 1px dashed #d1d5db;
+    padding: 0.5rem 0;
 }
 
-.section-sep {
-    height: 1px;
-    background: linear-gradient(90deg, transparent, rgba(148,163,184,0.25), transparent);
-    margin: 2rem 0;
-    animation: fadeIn 0.5s ease both;
+.metric-k {
+    color: #6b7280;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.78rem;
 }
 
-.sec-header {
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 0.65rem;
-    letter-spacing: 0.2em;
-    text-transform: uppercase;
-    color: #94a3b8;
-    margin: 0 0 1.2rem;
-    animation: fadeUp 0.4s ease both;
+.metric-v {
+    font-weight: 800;
+    text-align: right;
+}
+
+.axis-box {
+    border-left: 3px solid #111827;
+    border-bottom: 3px solid #111827;
+    padding: 1.2rem 0.8rem 0.8rem 1rem;
+    min-height: 220px;
+}
+
+.bar-row {
+    display: grid;
+    grid-template-columns: 95px 1fr 80px;
+    gap: 0.8rem;
+    align-items: center;
+    margin-bottom: 1rem;
+    font-size: 0.86rem;
+}
+
+.bar-track {
+    background: #f3f4f6;
+    border: 2px solid #111827;
+    border-radius: 999px;
+    overflow: hidden;
+    height: 23px;
+}
+
+.bar-fill {
+    height: 100%;
+    border-right: 2px solid #111827;
 }
 
 .footer-note {
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 0.65rem;
-    letter-spacing: 0.1em;
-    color: #94a3b8;
     text-align: center;
-    margin-top: 3rem;
-    padding-top: 1.2rem;
-    border-top: 1px solid rgba(148,163,184,0.15);
-    animation: fadeIn 0.5s 0.4s ease both;
+    color: #6b7280;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.72rem;
+    margin-top: 2rem;
 }
 </style>
 """, unsafe_allow_html=True)
 
 
-# ── Helpers (LOGIC UNCHANGED) ─────────────────────────────────────────────────
+# ── Helpers ──────────────────────────────────────────────────────────────────
 def bodily_injuries_label_to_value(label):
-    return {"None": 0, "One reported injury": 1, "Multiple / serious injuries": 2}[label]
+    return {
+        "None": 0,
+        "One reported injury": 1,
+        "Multiple / serious injuries": 2
+    }[label]
+
 
 def witnesses_label_to_value(label):
-    return {"No witnesses": 0, "One witness": 1, "Two witnesses": 2, "Three or more witnesses": 3}[label]
+    return {
+        "No witnesses": 0,
+        "One witness": 1,
+        "Two witnesses": 2,
+        "Three or more witnesses": 3
+    }[label]
+
 
 def risk_meta(fraud_prob):
     if fraud_prob < 0.25:
-        return "low",    "Low Risk",    "badge-low",    "chip-low"
+        return "low", "Low Risk", "badge-low", "low-text", "#22c55e"
     elif fraud_prob < 0.50:
-        return "medium", "Medium Risk", "badge-medium", "chip-medium"
-    return "high",   "High Risk",   "badge-high",   "chip-high"
+        return "medium", "Medium Risk", "badge-medium", "medium-text", "#f97316"
+    return "high", "High Risk", "badge-high", "high-text", "#ef4444"
+
 
 def action_meta(fraud_prob):
     if fraud_prob >= 0.50:
-        return "high",   "Send for Manual Investigation", \
-               "The model score exceeds 50%. This claim requires a full investigator review before any payout is processed. Do not proceed automatically."
+        return (
+            "Send for Manual Investigation",
+            "The score is high. This claim should be reviewed by an investigator before payout."
+        )
     elif fraud_prob >= THRESHOLD:
-        return "medium", "Flag for Secondary Review", \
-               "The score is above the decision threshold. Route for a supervisor spot-check and request additional documentation before proceeding."
-    return "low",    "Process Normally", \
-           "No elevated risk signals detected. This claim may proceed through the standard workflow without additional review steps."
+        return (
+            "Flag for Secondary Review",
+            "The score is above the decision threshold. Request supporting documentation and supervisor review."
+        )
+    return (
+        "Process Normally",
+        "No elevated risk signal was detected. The claim may proceed through the standard workflow."
+    )
 
 
-# ── HEADER ────────────────────────────────────────────────────────────────────
+def money(x):
+    return f"${x:,.0f}"
+
+
+def safe_text(x):
+    return html.escape(str(x))
+
+
+def bar(width, color):
+    width = max(0, min(100, width))
+    return f"""
+    <div class="bar-track">
+        <div class="bar-fill" style="width:{width}%; background:{color};"></div>
+    </div>
+    """
+
+
+# ── Header ───────────────────────────────────────────────────────────────────
 st.markdown("""
-<div class="hdr-tag">ML Risk Scoring &nbsp;·&nbsp; Portfolio Project</div>
-<h1 class="hdr-title">Insurance Fraud<br>Detection</h1>
-<div class="hdr-divider"></div>
-<p class="hdr-sub">Random Forest classifier &nbsp;·&nbsp; threshold-tuned for recall &nbsp;·&nbsp; 12-feature deployment model</p>
+<div class="story-shell">
+    <div class="kicker">Machine Learning Portfolio Project</div>
+    <h1 class="hero-title">Insurance Fraud<br>Detection</h1>
+    <p class="hero-sub">
+        A clean claim-risk scoring app that turns claim details into a fraud probability,
+        risk band, and recommended review action.
+    </p>
+    <div class="dot-row">
+        <div class="dot red"></div>
+        <div class="dot orange"></div>
+        <div class="dot green"></div>
+        <div class="dot blue"></div>
+        <div class="dot purple"></div>
+    </div>
+</div>
 """, unsafe_allow_html=True)
 
 
-# ── INPUTS ────────────────────────────────────────────────────────────────────
-col_l, col_r = st.columns([1, 1], gap="large")
+# ── Inputs ───────────────────────────────────────────────────────────────────
+left, right = st.columns(2, gap="large")
 
-with col_l:
+with left:
     st.markdown("""
-    <div class="glass-panel">
-      <div class="panel-title">
-        <span class="panel-title-dot" style="background:linear-gradient(135deg,#a78bfa,#7c6fcd);"></span>
-        01 &nbsp; Incident Details
-      </div>
+    <div class="story-card">
+        <div class="section-label">01 · Incident details</div>
+        <div class="story-heading">Show the claim event</div>
+        <div class="story-note">
+            These fields describe what happened during the reported incident.
+        </div>
     </div>
     """, unsafe_allow_html=True)
 
     incident_severity = st.selectbox(
         "Incident Severity",
-        ["Minor Damage", "Major Damage", "Total Loss", "Trivial Damage"],
-        help="Select the severity level of the reported incident"
+        ["Minor Damage", "Major Damage", "Total Loss", "Trivial Damage"]
     )
+
     incident_type = st.selectbox(
         "Incident Type",
-        ["Single Vehicle Collision", "Multi-vehicle Collision", "Vehicle Theft", "Parked Car"],
-        help="Select the type of incident that occurred"
+        ["Single Vehicle Collision", "Multi-vehicle Collision", "Vehicle Theft", "Parked Car"]
     )
+
     number_of_vehicles_involved = st.slider(
-        "Vehicles Involved", min_value=1, max_value=4, value=1
+        "Vehicles Involved",
+        min_value=1,
+        max_value=4,
+        value=1
     )
+
     bodily_injuries_label = st.select_slider(
         "Reported Injuries",
         options=["None", "One reported injury", "Multiple / serious injuries"],
         value="None"
     )
     bodily_injuries = bodily_injuries_label_to_value(bodily_injuries_label)
+
     witnesses_label = st.select_slider(
         "Witnesses Present",
         options=["No witnesses", "One witness", "Two witnesses", "Three or more witnesses"],
         value="One witness"
     )
     witnesses = witnesses_label_to_value(witnesses_label)
+
     months_as_customer = st.number_input(
-        "Months as Customer", min_value=0, value=200,
-        help="How long has this policy holder been a customer?"
+        "Months as Customer",
+        min_value=0,
+        value=200
     )
 
-with col_r:
+with right:
     st.markdown("""
-    <div class="glass-panel">
-      <div class="panel-title">
-        <span class="panel-title-dot" style="background:linear-gradient(135deg,#60a5fa,#38bdf8);"></span>
-        02 &nbsp; Claim & Policy Details
-      </div>
+    <div class="story-card">
+        <div class="section-label">02 · Policy and claim values</div>
+        <div class="story-heading">Show the money data</div>
+        <div class="story-note">
+            These inputs describe the size and structure of the insurance claim.
+        </div>
     </div>
     """, unsafe_allow_html=True)
 
-    total_claim_amount    = st.number_input("Total Claim Amount ($)",  min_value=0,   value=50000)
-    injury_claim          = st.number_input("Injury Claim ($)",        min_value=0,   value=5000)
-    property_claim        = st.number_input("Property Claim ($)",      min_value=0,   value=10000)
-    vehicle_claim         = st.number_input("Vehicle Claim ($)",       min_value=0,   value=35000)
-    policy_annual_premium = st.number_input("Annual Premium ($)",      min_value=0.0, value=1200.0, step=10.0)
-    policy_deductable     = st.number_input("Policy Deductable ($)",   min_value=0,   value=1000)
+    total_claim_amount = st.number_input(
+        "Total Claim Amount ($)",
+        min_value=0,
+        value=50000
+    )
 
-predict = st.button("◎  Run Fraud Assessment")
+    injury_claim = st.number_input(
+        "Injury Claim ($)",
+        min_value=0,
+        value=5000
+    )
+
+    property_claim = st.number_input(
+        "Property Claim ($)",
+        min_value=0,
+        value=10000
+    )
+
+    vehicle_claim = st.number_input(
+        "Vehicle Claim ($)",
+        min_value=0,
+        value=35000
+    )
+
+    policy_annual_premium = st.number_input(
+        "Annual Premium ($)",
+        min_value=0.0,
+        value=1200.0,
+        step=10.0
+    )
+
+    policy_deductable = st.number_input(
+        "Policy Deductable ($)",
+        min_value=0,
+        value=1000
+    )
+
+predict = st.button("Run Fraud Assessment →")
 
 
-# ── PREDICTION (LOGIC UNCHANGED) ─────────────────────────────────────────────
+# ── Prediction ───────────────────────────────────────────────────────────────
 if predict:
     input_data = template_row.copy()
-    input_data.loc[:, "incident_severity"]           = incident_severity
-    input_data.loc[:, "incident_type"]               = incident_type
+
+    input_data.loc[:, "incident_severity"] = incident_severity
+    input_data.loc[:, "incident_type"] = incident_type
     input_data.loc[:, "number_of_vehicles_involved"] = number_of_vehicles_involved
-    input_data.loc[:, "bodily_injuries"]             = bodily_injuries
-    input_data.loc[:, "witnesses"]                   = witnesses
-    input_data.loc[:, "months_as_customer"]          = months_as_customer
-    input_data.loc[:, "total_claim_amount"]          = total_claim_amount
-    input_data.loc[:, "injury_claim"]                = injury_claim
-    input_data.loc[:, "property_claim"]              = property_claim
-    input_data.loc[:, "vehicle_claim"]               = vehicle_claim
-    input_data.loc[:, "policy_annual_premium"]       = policy_annual_premium
-    input_data.loc[:, "policy_deductable"]           = policy_deductable
+    input_data.loc[:, "bodily_injuries"] = bodily_injuries
+    input_data.loc[:, "witnesses"] = witnesses
+    input_data.loc[:, "months_as_customer"] = months_as_customer
+    input_data.loc[:, "total_claim_amount"] = total_claim_amount
+    input_data.loc[:, "injury_claim"] = injury_claim
+    input_data.loc[:, "property_claim"] = property_claim
+    input_data.loc[:, "vehicle_claim"] = vehicle_claim
+    input_data.loc[:, "policy_annual_premium"] = policy_annual_premium
+    input_data.loc[:, "policy_deductable"] = policy_deductable
 
     fraud_prob = model.predict_proba(input_data)[0, 1]
     fraud_pred = int(fraud_prob >= THRESHOLD)
 
-    risk_cls, risk_label, badge_cls, chip_cls = risk_meta(fraud_prob)
-    action_cls, action_hl, action_d           = action_meta(fraud_prob)
-    verdict   = "Likely Fraudulent" if fraud_pred == 1 else "Likely Legitimate"
-    pct       = round(fraud_prob * 100, 1)
-    bar_colors = {
-        "low":    "linear-gradient(90deg, #34d399, #6ee7b7)",
-        "medium": "linear-gradient(90deg, #fbbf24, #fde68a)",
-        "high":   "linear-gradient(90deg, #f87171, #fca5a5)",
-    }
-    bar_gradient = bar_colors[risk_cls]
+    risk_cls, risk_label, badge_cls, text_cls, risk_color = risk_meta(fraud_prob)
+    action_title, action_desc = action_meta(fraud_prob)
 
-    # ── Section 03: Results
-    st.markdown('<div class="section-sep"></div>', unsafe_allow_html=True)
-    st.markdown('<p class="sec-header">03 &nbsp; Model Output</p>', unsafe_allow_html=True)
+    pct = round(fraud_prob * 100, 1)
+    verdict = "Likely Fraudulent" if fraud_pred == 1 else "Likely Legitimate"
 
-    res_col, act_col = st.columns([1, 1], gap="large")
+    st.markdown("<br>", unsafe_allow_html=True)
 
-    with res_col:
+    result_col, action_col = st.columns([1, 1], gap="large")
+
+    with result_col:
         st.markdown(f"""
-        <div class="score-card {risk_cls}">
-            <p class="score-eyebrow">Fraud Probability Score</p>
-            <p class="score-number {risk_cls}">{pct:.0f}%</p>
-
-            <div class="prog-track">
-                <div class="prog-fill {risk_cls}" style="width:{pct}%;"></div>
-            </div>
-            <div class="prog-labels">
-                <span>0%</span>
-                <span>Threshold {int(THRESHOLD*100)}%</span>
-                <span>100%</span>
+        <div class="story-card">
+            <div class="section-label">03 · Model output</div>
+            <div class="story-heading">Show the fraud risk</div>
+            <div class="story-note">
+                The model converts the claim information into a fraud probability score.
             </div>
 
-            <p class="score-verdict">{verdict}</p>
-            <span class="risk-badge {badge_cls}">{risk_label}</span>
+            <p class="result-score {text_cls}">{pct:.0f}%</p>
+
+            <div class="progress-wrap">
+                <div class="progress-fill" style="width:{pct}%; background:{risk_color};"></div>
+            </div>
+
+            <div class="metric-row">
+                <span class="metric-k">Decision threshold</span>
+                <span class="metric-v">{int(THRESHOLD * 100)}%</span>
+            </div>
+            <div class="metric-row">
+                <span class="metric-k">Prediction</span>
+                <span class="metric-v">{safe_text(verdict)}</span>
+            </div>
+
+            <br>
+            <span class="badge {badge_cls}">● {safe_text(risk_label)}</span>
         </div>
         """, unsafe_allow_html=True)
 
-    with act_col:
+    with action_col:
         st.markdown(f"""
-        <div class="action-card">
-            <span class="action-chip {chip_cls}">Recommended Action</span>
-            <p class="action-headline">{action_hl}</p>
-            <p class="action-desc">{action_d}</p>
+        <div class="story-card">
+            <div class="section-label">04 · Recommended decision</div>
+            <div class="story-heading">Show the action</div>
+            <div class="story-note">
+                The app does not replace human review. It supports triage and prioritization.
+            </div>
+
+            <h3 style="margin-top:1rem; font-size:1.45rem;">{safe_text(action_title)}</h3>
+            <p style="color:#4b5563; line-height:1.7;">{safe_text(action_desc)}</p>
+
+            <div class="metric-row">
+                <span class="metric-k">Model</span>
+                <span class="metric-v">Random Forest</span>
+            </div>
+            <div class="metric-row">
+                <span class="metric-k">Features</span>
+                <span class="metric-v">12 deployment inputs</span>
+            </div>
+            <div class="metric-row">
+                <span class="metric-k">Purpose</span>
+                <span class="metric-v">Portfolio demo</span>
+            </div>
         </div>
         """, unsafe_allow_html=True)
 
-    # ── Section 04: Charts + Drivers
-    st.markdown('<div class="section-sep"></div>', unsafe_allow_html=True)
-    st.markdown('<p class="sec-header">04 &nbsp; Claim Analysis & Risk Drivers</p>', unsafe_allow_html=True)
-
-    ch_col, dr_col = st.columns([1.2, 0.8], gap="large")
+    # ── Claim composition chart ───────────────────────────────────────────────
     other = max(0, total_claim_amount - injury_claim - property_claim - vehicle_claim)
+    max_claim = max(injury_claim, property_claim, vehicle_claim, other, 1)
 
-    with ch_col:
-        score_color = {
-            "low":    "#34d399",
-            "medium": "#fbbf24",
-            "high":   "#f87171",
-        }[risk_cls]
+    injury_w = injury_claim / max_claim * 100
+    property_w = property_claim / max_claim * 100
+    vehicle_w = vehicle_claim / max_claim * 100
+    other_w = other / max_claim * 100
 
-        chart_html = f"""
-<style>
-  body {{ margin:0; padding:0; }}
-  .cl {{ font-family:'JetBrains Mono',monospace; font-size:0.62rem;
-         letter-spacing:0.18em; text-transform:uppercase; color:#94a3b8;
-         margin:0 0 0.8rem; }}
-  .legend {{ display:flex; flex-wrap:wrap; gap:12px; margin:0.7rem 0 1.5rem;
-             font-family:'Plus Jakarta Sans',sans-serif; font-size:11px; color:#64748b; }}
-  .leg-item {{ display:flex; align-items:center; gap:5px; }}
-  .leg-dot  {{ width:9px; height:9px; border-radius:50%; flex-shrink:0; }}
-</style>
+    st.markdown("<br>", unsafe_allow_html=True)
 
-<p class="cl">Claim Composition</p>
-<div style="position:relative;width:100%;height:200px;">
-  <canvas id="claimChart" role="img"
-    aria-label="Bar chart: Injury ${injury_claim:,}, Property ${property_claim:,}, Vehicle ${vehicle_claim:,}, Other ${other:,}">
-    Injury ${injury_claim:,} · Property ${property_claim:,} · Vehicle ${vehicle_claim:,} · Other ${other:,}
-  </canvas>
-</div>
+    chart_col, driver_col = st.columns([1.2, 0.8], gap="large")
 
-<div class="legend">
-  <div class="leg-item"><div class="leg-dot" style="background:#fb7185;"></div>Injury</div>
-  <div class="leg-item"><div class="leg-dot" style="background:#fbbf24;"></div>Property</div>
-  <div class="leg-item"><div class="leg-dot" style="background:#60a5fa;"></div>Vehicle</div>
-  <div class="leg-item"><div class="leg-dot" style="background:#cbd5e1;"></div>Other</div>
-</div>
+    with chart_col:
+        st.markdown(f"""
+        <div class="story-card">
+            <div class="section-label">05 · Claim composition</div>
+            <div class="story-heading">Show the data clearly</div>
+            <div class="story-note">
+                The claim is broken into injury, property, vehicle, and remaining claim amount.
+            </div>
 
-<p class="cl">Score vs Threshold</p>
-<div style="position:relative;width:100%;height:72px;">
-  <canvas id="gaugeChart" role="img"
-    aria-label="Horizontal bar: score {pct:.0f}% vs threshold {int(THRESHOLD*100)}%">
-    Score {pct:.0f}% · Threshold {int(THRESHOLD*100)}%
-  </canvas>
-</div>
+            <div class="axis-box">
+                <div class="bar-row">
+                    <div><b>Injury</b></div>
+                    {bar(injury_w, "#ef4444")}
+                    <div>{money(injury_claim)}</div>
+                </div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
-<script>
-(function() {{
-  const T = {{ color:'#94a3b8', font:{{ family:"'Plus Jakarta Sans',sans-serif", size:11 }} }};
-  const G = {{ color:'rgba(148,163,184,0.15)' }};
+                <div class="bar-row">
+                    <div><b>Property</b></div>
+                    {bar(property_w, "#f97316")}
+                    <div>{money(property_claim)}</div>
+                </div>
 
-  new Chart(document.getElementById('claimChart'), {{
-    type: 'bar',
-    data: {{
-      labels: ['Injury', 'Property', 'Vehicle', 'Other'],
-      datasets: [{{
-        data: [{injury_claim}, {property_claim}, {vehicle_claim}, {other}],
-        backgroundColor: ['rgba(251,113,133,0.75)','rgba(251,191,36,0.75)','rgba(96,165,250,0.75)','rgba(203,213,225,0.6)'],
-        borderColor:     ['#fb7185','#fbbf24','#60a5fa','#cbd5e1'],
-        borderWidth: 1.5,
-        borderRadius: 8,
-        borderSkipped: false,
-      }}]
-    }},
-    options: {{
-      responsive: true, maintainAspectRatio: false,
-      animation: {{
-        duration: 900,
-        easing: 'easeOutQuart',
-        delay: (ctx) => ctx.dataIndex * 110,
-      }},
-      plugins: {{
-        legend: {{ display: false }},
-        tooltip: {{
-          backgroundColor: 'rgba(26,26,46,0.92)',
-          titleColor: '#94a3b8',
-          bodyColor: '#f1f5f9',
-          titleFont: {{ family:"'JetBrains Mono',monospace", size:11 }},
-          bodyFont:  {{ family:"'Plus Jakarta Sans',sans-serif", size:12 }},
-          padding: 12,
-          cornerRadius: 10,
-          callbacks: {{ label: (c) => '  $' + c.raw.toLocaleString() }}
-        }}
-      }},
-      scales: {{
-        x: {{ grid: {{ display:false }}, ticks: T, border: {{ display:false }} }},
-        y: {{ grid: G, ticks: {{ ...T, callback:(v) => '$'+v.toLocaleString() }}, border: {{ display:false }} }}
-      }}
-    }}
-  }});
+                <div class="bar-row">
+                    <div><b>Vehicle</b></div>
+                    {bar(vehicle_w, "#38bdf8")}
+                    <div>{money(vehicle_claim)}</div>
+                </div>
 
-  new Chart(document.getElementById('gaugeChart'), {{
-    type: 'bar',
-    data: {{
-      labels: ['Model score', 'Threshold'],
-      datasets: [{{
-        data: [{pct:.1f}, {round(THRESHOLD*100,1)}],
-        backgroundColor: ['{score_color}88', 'rgba(203,213,225,0.5)'],
-        borderColor:     ['{score_color}', '#cbd5e1'],
-        borderWidth: 1.5,
-        borderRadius: 6,
-        borderSkipped: false,
-      }}]
-    }},
-    options: {{
-      indexAxis: 'y', responsive: true, maintainAspectRatio: false,
-      animation: {{ duration: 1100, easing: 'easeOutExpo', delay: (ctx) => ctx.dataIndex * 200 }},
-      plugins: {{
-        legend: {{ display: false }},
-        tooltip: {{
-          backgroundColor: 'rgba(26,26,46,0.92)',
-          titleColor: '#94a3b8', bodyColor: '#f1f5f9',
-          titleFont: {{ family:"'JetBrains Mono',monospace", size:11 }},
-          bodyFont:  {{ family:"'Plus Jakarta Sans',sans-serif", size:12 }},
-          padding: 12, cornerRadius: 10,
-          callbacks: {{ label: (c) => '  ' + c.raw + '%' }}
-        }}
-      }},
-      scales: {{
-        x: {{ max: 100, grid: G, ticks: {{ ...T, callback:(v) => v+'%' }}, border: {{ display:false }} }},
-        y: {{ grid: {{ display:false }}, ticks: T, border: {{ display:false }} }}
-      }}
-    }}
-  }});
-}})();
-</script>
-"""
-        st.markdown('<div class="chart-glass">', unsafe_allow_html=True)
-        st.components.v1.html(chart_html, height=420)
-        st.markdown('</div>', unsafe_allow_html=True)
+                <div class="bar-row">
+                    <div><b>Other</b></div>
+                    {bar(other_w, "#a855f7")}
+                    <div>{money(other)}</div>
+                </div>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
 
-    with dr_col:
-        st.markdown('<div class="drivers-glass">', unsafe_allow_html=True)
-        st.markdown('<p class="panel-title" style="margin-bottom:1.1rem;"><span class="panel-title-dot" style="background:linear-gradient(135deg,#a78bfa,#7c6fcd);width:7px;height:7px;border-radius:50%;display:inline-block;margin-right:0.5rem;"></span>Risk Drivers</p>', unsafe_allow_html=True)
-
+    with driver_col:
         risk_drivers = []
+
         if incident_severity in ["Major Damage", "Total Loss"]:
-            risk_drivers.append(("High incident severity", "Strongly associated with elevated fraud risk across the training set."))
+            risk_drivers.append((
+                "High incident severity",
+                "Major damage or total loss can increase claim risk."
+            ))
+
         if total_claim_amount >= 60000:
-            risk_drivers.append(("Large total claim", "Amount exceeds the high-risk threshold of $60,000."))
+            risk_drivers.append((
+                "Large total claim",
+                "The total claim amount is above $60,000."
+            ))
+
         if number_of_vehicles_involved >= 2:
-            risk_drivers.append(("Multiple vehicles", "Complex multi-vehicle incidents show higher fraud rates."))
+            risk_drivers.append((
+                "Multiple vehicles involved",
+                "Multi-vehicle claims can be more complex to validate."
+            ))
+
         if bodily_injuries >= 1:
-            risk_drivers.append(("Reported bodily injuries", "Injury claims are correlated with higher fraud incidence."))
+            risk_drivers.append((
+                "Reported bodily injuries",
+                "Injury-related claims may require additional verification."
+            ))
+
         if witnesses >= 2:
-            risk_drivers.append(("High witness count", "An unusually high number of witnesses may indicate staging."))
+            risk_drivers.append((
+                "High witness count",
+                "A high witness count can be a useful review signal."
+            ))
+
         if months_as_customer < 24:
-            risk_drivers.append(("Short customer tenure", "Policy age under 24 months is a mild risk signal."))
+            risk_drivers.append((
+                "Short customer tenure",
+                "Newer policies may require closer claim review."
+            ))
+
+        driver_html = ""
 
         if not risk_drivers:
-            st.markdown("""
-            <div class="driver-item" style="border-bottom:none;">
-                <div class="driver-dot" style="background:#34d399; box-shadow:0 0 6px rgba(52,211,153,0.5);"></div>
-                <div>
-                    <div class="driver-title" style="color:#059669;">No major risk indicators</div>
-                    <div class="driver-desc">No high-risk triggers detected from the entered values.</div>
-                </div>
-            </div>""", unsafe_allow_html=True)
+            driver_html = """
+            <div class="driver">
+                <div class="driver-title">No major risk indicators</div>
+                <div class="driver-desc">The entered values did not trigger the main rule-based risk notes.</div>
+            </div>
+            """
         else:
-            for i, (title, desc) in enumerate(risk_drivers):
-                st.markdown(f"""
-                <div class="driver-item" style="animation-delay:{i*0.07}s;">
-                    <div class="driver-dot"></div>
-                    <div>
-                        <div class="driver-title">{title}</div>
-                        <div class="driver-desc">{desc}</div>
-                    </div>
-                </div>""", unsafe_allow_html=True)
+            for title, desc in risk_drivers:
+                driver_html += f"""
+                <div class="driver">
+                    <div class="driver-title">{safe_text(title)}</div>
+                    <div class="driver-desc">{safe_text(desc)}</div>
+                </div>
+                """
 
-        st.markdown("""
-        <div class="minfo">
-            <div class="minfo-row"><span class="minfo-k">Model</span><span class="minfo-v">Random Forest</span></div>
-            <div class="minfo-row"><span class="minfo-k">Tuning</span><span class="minfo-v">Threshold → recall</span></div>
-            <div class="minfo-row"><span class="minfo-k">Features</span><span class="minfo-v">12 inputs (reduced)</span></div>
-            <div class="minfo-row" style="border-bottom:none;"><span class="minfo-k">Purpose</span><span class="minfo-v">Portfolio demo</span></div>
+        st.markdown(f"""
+        <div class="story-card">
+            <div class="section-label">06 · Risk drivers</div>
+            <div class="story-heading">Show the why</div>
+            <div class="story-note">
+                These notes explain which entered values may have contributed to the review decision.
+            </div>
+            {driver_html}
         </div>
         """, unsafe_allow_html=True)
-        st.markdown('</div>', unsafe_allow_html=True)
 
     st.markdown("""
     <p class="footer-note">
-        ◎ &nbsp; Portfolio demonstration &nbsp;·&nbsp; supports human review — not a replacement for professional investigation
-    </p>""", unsafe_allow_html=True)
+        Portfolio demonstration · The model supports human review and should not be used as the only decision-maker.
+    </p>
+    """, unsafe_allow_html=True)

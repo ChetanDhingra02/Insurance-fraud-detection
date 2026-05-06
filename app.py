@@ -62,20 +62,15 @@ footer                          { display:none !important; }
 .main .block-container { max-width:1160px; padding:0 2rem 6rem; }
 
 /* ═══════════════════════════
-   ANIMATED BACKGROUND CANVAS
+   STAR LAYER — fixed but pointer-events:none
 ═══════════════════════════ */
-#cosmos-canvas {
+#shield-star-layer {
   position:fixed; top:0; left:0; width:100%; height:100%;
-  pointer-events:none; z-index:0; opacity:0.55;
+  pointer-events:none !important; z-index:0; overflow:hidden;
 }
-.stApp > * { position:relative; z-index:1; }
-
-/* ═══════════════════════════
-   PARTICLES / STARS
-═══════════════════════════ */
 .star {
-  position:fixed; border-radius:50%;
-  background:white; pointer-events:none; z-index:0;
+  position:absolute; border-radius:50%;
+  background:white; pointer-events:none !important;
   animation: twinkle var(--d,3s) ease-in-out infinite var(--delay,0s);
 }
 @keyframes twinkle {
@@ -84,31 +79,33 @@ footer                          { display:none !important; }
 }
 
 /* ═══════════════════════════
-   FLOATING CAR
+   FLOATING CAR — fixed, fully non-interactive
 ═══════════════════════════ */
 .float-car {
-  position:fixed; bottom:60px; right:-200px;
-  z-index:0; pointer-events:none; opacity:0.18;
-  animation: carDrive 18s linear infinite;
+  position:fixed; bottom:60px; right:-300px;
+  z-index:0; pointer-events:none !important; opacity:0;
+  animation: carDrive 20s linear infinite 2s;
 }
+.float-car, .float-car * { pointer-events:none !important; }
 @keyframes carDrive {
-  0%   { right:-200px; bottom:60px; opacity:0; }
+  0%   { right:-300px; opacity:0; }
   5%   { opacity:0.18; }
   90%  { opacity:0.18; }
-  100% { right:110%; bottom:60px; opacity:0; }
+  100% { right:110vw; opacity:0; }
 }
 
 .float-shield {
-  position:fixed; top:120px; left:-80px;
-  z-index:0; pointer-events:none; opacity:0;
-  animation: shieldFloat 22s ease-in-out infinite 4s;
+  position:fixed; top:130px; left:-120px;
+  z-index:0; pointer-events:none !important; opacity:0;
+  animation: shieldFloat 24s ease-in-out infinite 6s;
 }
+.float-shield, .float-shield * { pointer-events:none !important; }
 @keyframes shieldFloat {
-  0%   { left:-80px; opacity:0; }
-  8%   { opacity:0.12; }
-  50%  { left:48%; opacity:0.12; }
-  92%  { opacity:0.12; }
-  100% { left:110%; opacity:0; }
+  0%   { left:-120px; opacity:0; }
+  8%   { opacity:0.10; }
+  50%  { left:46%; opacity:0.10; }
+  92%  { opacity:0.10; }
+  100% { left:110vw; opacity:0; }
 }
 
 /* ═══════════════════════════
@@ -770,4 +767,4 @@ if predict:
   {d_html}
 </div>""")
 
-rh("""<div class="footer">Shields · Portfolio Demonstration · Triage support only — not automatic denial or approval</div>""")
+rh("""<div class="footer">Shield · Portfolio Demonstration · Triage support only — not automatic denial or approval</div>""")

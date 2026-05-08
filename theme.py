@@ -65,6 +65,33 @@ footer { display: none !important; }
 
 .main .block-container { max-width: 1160px; padding: 0 2rem 6rem; }
 
+/* Put the Streamlit component iframe behind the app as the animated sky layer. */
+div[data-testid="stIFrame"],
+div[data-testid="stIframe"],
+iframe[title="st.iframe"],
+iframe[title="streamlit_component"] {
+  position: fixed !important;
+  inset: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  min-width: 100vw !important;
+  min-height: 100vh !important;
+  max-width: 100vw !important;
+  max-height: 100vh !important;
+  z-index: -10 !important;
+  pointer-events: none !important;
+  border: 0 !important;
+  background: #04080f !important;
+}
+
+div[data-testid="stIFrame"] iframe,
+div[data-testid="stIframe"] iframe {
+  width: 100vw !important;
+  height: 100vh !important;
+  border: 0 !important;
+}
+
+
 /* ── HEADER ───────────────────────────────────────────────────────────────── */
 .hdr { display:flex; align-items:center; justify-content:space-between; padding:1.1rem 0 1.0rem; border-bottom:1.5px solid var(--border); animation:slideDown 0.5s cubic-bezier(0.22,1,0.36,1) both; }
 @keyframes slideDown { from{opacity:0;transform:translateY(-8px)} to{opacity:1;transform:translateY(0)} }
@@ -170,14 +197,13 @@ div.stButton > button:active { box-shadow:0 1px 0 rgba(10,60,40,0.55),0 3px 12px
 CANVAS_JS = """
 <script>
 (function () {
-  var p = window.parent;
-  if (!p) return;
+  var p = window;
 
   // Guard against duplicate injection on Streamlit reruns
   if (p.__aurora_running__) return;
   p.__aurora_running__ = true;
 
-  /* ── Inject transparency styles into the parent page ── */
+  /* ── Iframe page base styles ── */
   var style = p.document.createElement('style');
   style.textContent = [
     'html { background: #04080f !important; }',
@@ -189,6 +215,7 @@ CANVAS_JS = """
     '.main { background: transparent !important; }',
     '[data-testid="block-container"] { background: transparent !important; }',
     '.block-container { background: transparent !important; }',
+    'html, body { margin:0 !important; padding:0 !important; overflow:hidden !important; width:100vw !important; height:100vh !important; }',
   ].join('\n');
   p.document.head.appendChild(style);
 
@@ -442,7 +469,6 @@ CANVAS_JS = """
 def render_theme() -> None:
     # CSS injected directly into the page — <style> tags are allowed by st.markdown
     st.markdown(CSS, unsafe_allow_html=True)
-    # JS runs in a real iframe (which actually executes scripts), then uses
-    # window.parent to paint on the real Streamlit page behind all content.
-    # height=0 hides the iframe completely.
-    components.html(CANVAS_JS, height=0, scrolling=False)
+    # The sky animation runs inside a real Streamlit component iframe.
+    # CSS above pins that iframe behind the app as a full-screen background.
+    components.html(CANVAS_JS, height=1, scrolling=False)

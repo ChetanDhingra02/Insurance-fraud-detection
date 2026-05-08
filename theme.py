@@ -1,15 +1,16 @@
 import streamlit as st
+import streamlit.components.v1 as components
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# The core trick: st.markdown normally strips <script> tags.
-# BUT if we put the script inside a <template> element and then use a tiny
-# inline onload-style bootstrap that moves it to <head>, it executes cleanly.
-# Everything runs in the real page context — NOT an iframe — so position:fixed
-# elements become true full-page backgrounds that content scrolls over.
+# CSS goes via st.markdown (unsafe_allow_html) — <style> tags work fine.
+# JS goes via st.components.v1.html() which actually executes scripts inside
+# a sandboxed iframe. We use window.parent to reach the real Streamlit page
+# and inject the canvas + transparency styles directly there.
+# The iframe itself is height=0 so it takes no visual space.
 # ─────────────────────────────────────────────────────────────────────────────
 
-THEME = r"""
+CSS = """
 <style>
 /* ── Google Font ──────────────────────────────────────────────────────────── */
 @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@300;400;500;600;700;800&display=swap');
@@ -41,6 +42,8 @@ html, body, [class*="css"] {
 }
 
 /* Transparent Streamlit chrome so our canvas shows through */
+html { background: #04080f !important; }
+body { background: transparent !important; }
 .stApp,
 [data-testid="stAppViewContainer"],
 [data-testid="stAppViewBlockContainer"],
@@ -59,9 +62,6 @@ section[data-testid="stSidebar"],
 [data-testid="stToolbar"],
 [data-testid="stStatusWidget"],
 footer { display: none !important; }
-
-/* Page canvas background colour (canvas draws on top, but this is fallback) */
-body { background: #04080f !important; }
 
 .main .block-container { max-width: 1160px; padding: 0 2rem 6rem; }
 
@@ -162,40 +162,27 @@ div.stButton > button:active { box-shadow:0 1px 0 rgba(10,60,40,0.55),0 3px 12px
 .driver-d { font-size:0.77rem; color:var(--ink-40); line-height:1.55; }
 .footer { text-align:center; margin-top:3rem; padding-top:1.2rem; border-top:1.5px solid var(--border); font-size:0.68rem; color:var(--ink-40); }
 </style>
+"""
 
-<!-- Night sky canvas — injected into real page DOM, not an iframe -->
-<div id="__aurora_bootstrap__"></div>
+# Runs inside a sandboxed st.components iframe.
+# Uses window.parent to escape into the real Streamlit page and
+# inject the canvas + transparency styles directly there.
+CANVAS_JS = """
 <script>
 (function () {
-  // Bootstrap: move ourselves to <head> so the canvas persists across Streamlit reruns
-  var bootstrap = document.getElementById('__aurora_bootstrap__');
-  if (!bootstrap || window.__aurora_running__) return;
-  window.__aurora_running__ = true;
+  var p = window.parent;
+  if (!p) return;
 
-  /* ── Canvas setup ─────────────────────────────────────────────────────── */
-  var cv = document.createElement('canvas');
-  cv.id = '__night_sky__';
-  // Sit behind everything: fixed, full-viewport, z-index -1 on <html> element
-  // so it underlays the entire Streamlit stacking context.
-  cv.style.cssText = [
-    'position:fixed',
-    'top:0', 'left:0',
-    'width:100vw', 'height:100vh',
-    'pointer-events:none',
-    'z-index:-1',
-    'display:block',
-  ].join(';');
-  // Attach to <html> (documentElement) so z-index:-1 is relative to the
-  // viewport stacking context, not buried inside a Streamlit div.
-  document.documentElement.appendChild(cv);
+  // Guard against duplicate injection on Streamlit reruns
+  if (p.__aurora_running__) return;
+  p.__aurora_running__ = true;
 
-  /* Make every Streamlit layer transparent so canvas shows through,
-     and ensure they sit in the normal flow above z-index:-1 canvas */
-  var style = document.createElement('style');
+  /* ── Inject transparency styles into the parent page ── */
+  var style = p.document.createElement('style');
   style.textContent = [
     'html { background: #04080f !important; }',
     'body { background: transparent !important; }',
-    '.stApp { background: transparent !important; position: relative; }',
+    '.stApp { background: transparent !important; }',
     '[data-testid="stAppViewContainer"] { background: transparent !important; }',
     '[data-testid="stAppViewBlockContainer"] { background: transparent !important; }',
     '[data-testid="stMain"] { background: transparent !important; }',
@@ -203,50 +190,62 @@ div.stButton > button:active { box-shadow:0 1px 0 rgba(10,60,40,0.55),0 3px 12px
     '[data-testid="block-container"] { background: transparent !important; }',
     '.block-container { background: transparent !important; }',
   ].join('\n');
-  document.head.appendChild(style);
+  p.document.head.appendChild(style);
+
+  /* ── Create canvas in parent page, behind all content ── */
+  var cv = p.document.createElement('canvas');
+  cv.id = '__night_sky__';
+  cv.style.cssText = [
+    'position:fixed',
+    'top:0',
+    'left:0',
+    'width:100vw',
+    'height:100vh',
+    'pointer-events:none',
+    'z-index:-1',
+    'display:block',
+  ].join(';');
+  p.document.body.insertBefore(cv, p.document.body.firstChild);
 
   var ctx = cv.getContext('2d');
   var W, H;
 
   function resize() {
-    W = cv.width  = window.innerWidth;
-    H = cv.height = window.innerHeight;
+    W = cv.width  = p.innerWidth;
+    H = cv.height = p.innerHeight;
   }
   resize();
-  window.addEventListener('resize', resize);
+  p.addEventListener('resize', resize);
 
-  /* ── Stars ────────────────────────────────────────────────────────────── */
+  /* ── Stars ── */
   var stars = [];
   for (var i = 0; i < 260; i++) {
     stars.push({
       x:    Math.random(),
-      y:    Math.random() * 0.75,          // top 75% of screen
+      y:    Math.random() * 0.75,
       r:    Math.random() * 1.4 + 0.3,
-      base: Math.random() * 0.5 + 0.25,   // base opacity
-      spd:  Math.random() * 0.8 + 0.3,    // twinkle speed (cycles/s)
-      ph:   Math.random() * Math.PI * 2,  // phase offset
+      base: Math.random() * 0.5 + 0.25,
+      spd:  Math.random() * 0.8 + 0.3,
+      ph:   Math.random() * Math.PI * 2,
     });
   }
 
-  /* ── Aurora bands ─────────────────────────────────────────────────────── */
-  // Each band: centre x (fraction), width, peak y, colours, speed, phase
+  /* ── Aurora bands ── */
   var bands = [
-    { cx:0.12, w:0.55, y:0.18, h:0.22, c1:'#00ff88', c2:'#00ccaa', dur:22, ph:0.0   },
-    { cx:0.40, w:0.48, y:0.12, h:0.20, c1:'#5599ff', c2:'#8833ff', dur:28, ph:1.8   },
-    { cx:0.68, w:0.42, y:0.15, h:0.18, c1:'#00ddff', c2:'#3366ff', dur:24, ph:3.5   },
-    { cx:0.82, w:0.32, y:0.10, h:0.16, c1:'#ff55bb', c2:'#8833ff', dur:19, ph:5.2   },
-    { cx:0.25, w:0.60, y:0.28, h:0.14, c1:'#00ffbb', c2:'#00aa55', dur:32, ph:2.6   },
+    { cx:0.12, w:0.55, y:0.18, h:0.22, c1:'#00ff88', c2:'#00ccaa', dur:22, ph:0.0 },
+    { cx:0.40, w:0.48, y:0.12, h:0.20, c1:'#5599ff', c2:'#8833ff', dur:28, ph:1.8 },
+    { cx:0.68, w:0.42, y:0.15, h:0.18, c1:'#00ddff', c2:'#3366ff', dur:24, ph:3.5 },
+    { cx:0.82, w:0.32, y:0.10, h:0.16, c1:'#ff55bb', c2:'#8833ff', dur:19, ph:5.2 },
+    { cx:0.25, w:0.60, y:0.28, h:0.14, c1:'#00ffbb', c2:'#00aa55', dur:32, ph:2.6 },
   ];
 
-  /* ── Snowflakes ───────────────────────────────────────────────────────── */
+  /* ── Snowflakes ── */
   var snowCols = ['#b8eedd','#8ecfff','#c8b8ff','#ffc8e8','#ffffff'];
   var flakes = [];
-  for (var j = 0; j < 90; j++) {
-    flakes.push(makeFlake());
-  }
+  for (var j = 0; j < 90; j++) { flakes.push(makeFlake(false)); }
   function makeFlake(fromTop) {
     return {
-      x:   Math.random() * 1,
+      x:   Math.random(),
       y:   fromTop ? -0.02 : Math.random(),
       r:   Math.random() * 2.2 + 0.8,
       vx:  (Math.random() - 0.5) * 0.00015,
@@ -256,20 +255,20 @@ div.stButton > button:active { box-shadow:0 1px 0 rgba(10,60,40,0.55),0 3px 12px
     };
   }
 
-  /* ── Road & car ──────────────────────────────────────────────────────── */
-  var carX = -0.18;  // fraction of W
+  /* ── Car ── */
+  var carX = -0.18;
   var CAR_SPEED = 0.00018; // fraction of W per ms
   var lastT = 0;
 
-  // Headlight shimmer particles
-  var shimmer = [];
-  for (var k = 0; k < 6; k++) {
-    shimmer.push({ life: Math.random(), spd: Math.random() * 0.003 + 0.001, a: Math.random() * Math.PI / 4 - Math.PI / 8 });
+  /* ── Hex + alpha helper ── */
+  function hexAlpha(hex, a) {
+    var r = parseInt(hex.slice(1,3), 16);
+    var g = parseInt(hex.slice(3,5), 16);
+    var b = parseInt(hex.slice(5,7), 16);
+    return 'rgba('+r+','+g+','+b+','+a.toFixed(3)+')';
   }
 
-  /* ── Draw helpers ─────────────────────────────────────────────────────── */
-  function drawNightSky(t) {
-    /* Background gradient */
+  function drawNightSky() {
     var bg = ctx.createLinearGradient(0, 0, 0, H);
     bg.addColorStop(0,   '#02040c');
     bg.addColorStop(0.6, '#04080f');
@@ -281,20 +280,17 @@ div.stButton > button:active { box-shadow:0 1px 0 rgba(10,60,40,0.55),0 3px 12px
   function drawAurora(t) {
     ctx.save();
     ctx.globalCompositeOperation = 'screen';
-    bands.forEach(function (b) {
+    bands.forEach(function(b) {
       var sway = Math.sin(t / (b.dur * 1000) * Math.PI * 2 + b.ph);
       var cy   = (b.y + sway * 0.04) * H;
       var cx   = b.cx * W;
       var rw   = b.w  * W;
       var rh   = b.h  * H;
       var peak = 0.38 + Math.sin(t / (b.dur * 800) + b.ph + 1) * 0.14;
-
-      // Vertical ribbon shape
       var grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, rw * 0.7);
       grad.addColorStop(0,   hexAlpha(b.c1, peak));
       grad.addColorStop(0.4, hexAlpha(b.c2, peak * 0.65));
       grad.addColorStop(1,   hexAlpha(b.c2, 0));
-
       ctx.filter = 'blur(28px)';
       ctx.beginPath();
       ctx.ellipse(cx, cy, rw * 0.7, rh * 0.9, 0, 0, Math.PI * 2);
@@ -307,30 +303,27 @@ div.stButton > button:active { box-shadow:0 1px 0 rgba(10,60,40,0.55),0 3px 12px
   }
 
   function drawStars(t) {
-    stars.forEach(function (s) {
-      var op = s.base + Math.sin(t / 1000 * s.spd * Math.PI * 2 + s.ph) * 0.28;
+    stars.forEach(function(s) {
+      var op = Math.max(0, Math.min(1, s.base + Math.sin(t / 1000 * s.spd * Math.PI * 2 + s.ph) * 0.28));
       ctx.beginPath();
       ctx.arc(s.x * W, s.y * H, s.r, 0, Math.PI * 2);
-      ctx.fillStyle = 'rgba(255,255,255,' + Math.max(0, Math.min(1, op)) + ')';
+      ctx.fillStyle = 'rgba(255,255,255,' + op + ')';
       ctx.fill();
-      // Tiny cross glint on bigger stars
       if (s.r > 1.1 && op > 0.55) {
         ctx.strokeStyle = 'rgba(255,255,255,' + (op * 0.35) + ')';
         ctx.lineWidth = 0.5;
         ctx.beginPath();
-        ctx.moveTo(s.x * W - s.r * 2.5, s.y * H);
-        ctx.lineTo(s.x * W + s.r * 2.5, s.y * H);
-        ctx.moveTo(s.x * W, s.y * H - s.r * 2.5);
-        ctx.lineTo(s.x * W, s.y * H + s.r * 2.5);
+        ctx.moveTo(s.x*W - s.r*2.5, s.y*H); ctx.lineTo(s.x*W + s.r*2.5, s.y*H);
+        ctx.moveTo(s.x*W, s.y*H - s.r*2.5); ctx.lineTo(s.x*W, s.y*H + s.r*2.5);
         ctx.stroke();
       }
     });
   }
 
   function drawSnow(dt) {
-    flakes.forEach(function (f, i) {
-      f.x += f.vx;
-      f.y += f.vy;
+    flakes.forEach(function(f, i) {
+      f.x += f.vx * dt;
+      f.y += f.vy * dt;
       if (f.y > 1.02) flakes[i] = makeFlake(true);
       ctx.beginPath();
       ctx.arc(f.x * W, f.y * H, f.r, 0, Math.PI * 2);
@@ -342,156 +335,114 @@ div.stButton > button:active { box-shadow:0 1px 0 rgba(10,60,40,0.55),0 3px 12px
   }
 
   function drawRoad() {
-    var roadY  = H * 0.90;
-    var roadH  = H * 0.10;
-
-    // Road surface
+    var roadY = H * 0.90;
+    var roadH = H * 0.10;
     var rg = ctx.createLinearGradient(0, roadY, 0, roadY + roadH);
     rg.addColorStop(0, '#0a1020');
     rg.addColorStop(1, '#060c18');
     ctx.fillStyle = rg;
     ctx.fillRect(0, roadY, W, roadH);
-
-    // Road edge line
+    // Edge glow line
     ctx.strokeStyle = 'rgba(58,219,138,0.18)';
     ctx.lineWidth = 1.5;
-    ctx.beginPath();
-    ctx.moveTo(0, roadY);
-    ctx.lineTo(W, roadY);
-    ctx.stroke();
-
+    ctx.beginPath(); ctx.moveTo(0, roadY); ctx.lineTo(W, roadY); ctx.stroke();
     // Dashed centre line
     ctx.setLineDash([W * 0.04, W * 0.03]);
     ctx.strokeStyle = 'rgba(255,255,255,0.08)';
     ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.moveTo(0, roadY + roadH * 0.5);
-    ctx.lineTo(W, roadY + roadH * 0.5);
-    ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(0, roadY + roadH * 0.5); ctx.lineTo(W, roadY + roadH * 0.5); ctx.stroke();
     ctx.setLineDash([]);
   }
 
-  function drawCar(t, dt) {
-    carX += CAR_SPEED * dt; // dt-based so speed is consistent across frame rates
+  function drawCar(dt) {
+    carX += CAR_SPEED * dt;
     if (carX > 1.18) carX = -0.18;
 
-    var cx   = carX * W;
+    var cx    = carX * W;
     var roadY = H * 0.90;
-    var cw   = W * 0.10;
-    var ch   = cw * 0.38;
-    var cy   = roadY - ch * 0.5;
+    var cw    = W * 0.10;
+    var ch    = cw * 0.38;
+    var cy    = roadY - ch * 0.5;
 
-    // Headlight cone (left-to-right car, so lights face right)
-    var hlg = ctx.createRadialGradient(cx + cw * 0.52, cy + ch * 0.5, 0, cx + cw * 0.52, cy + ch * 0.5, cw * 1.6);
+    // Headlight cone
+    var hlg = ctx.createRadialGradient(cx+cw*0.52, cy+ch*0.5, 0, cx+cw*0.52, cy+ch*0.5, cw*1.6);
     hlg.addColorStop(0,   'rgba(220,240,255,0.22)');
     hlg.addColorStop(0.3, 'rgba(180,220,255,0.10)');
     hlg.addColorStop(1,   'rgba(100,180,255,0)');
     ctx.fillStyle = hlg;
     ctx.beginPath();
-    ctx.moveTo(cx + cw * 0.52, cy + ch * 0.25);
-    ctx.lineTo(cx + cw * 0.52, cy + ch * 0.75);
-    ctx.lineTo(cx + cw * 2.1,  cy + ch * 1.1);
-    ctx.lineTo(cx + cw * 2.1,  cy - ch * 0.1);
-    ctx.closePath();
-    ctx.fill();
+    ctx.moveTo(cx+cw*0.52, cy+ch*0.25);
+    ctx.lineTo(cx+cw*0.52, cy+ch*0.75);
+    ctx.lineTo(cx+cw*2.1,  cy+ch*1.1);
+    ctx.lineTo(cx+cw*2.1,  cy-ch*0.1);
+    ctx.closePath(); ctx.fill();
 
-    // Car body shadow
+    // Shadow
     ctx.fillStyle = 'rgba(0,0,0,0.22)';
-    ctx.beginPath();
-    ctx.ellipse(cx + cw * 0.5, roadY + 2, cw * 0.45, 4, 0, 0, Math.PI * 2);
-    ctx.fill();
+    ctx.beginPath(); ctx.ellipse(cx+cw*0.5, roadY+2, cw*0.45, 4, 0, 0, Math.PI*2); ctx.fill();
 
-    // Car body
-    var bodyGrad = ctx.createLinearGradient(cx, cy, cx, cy + ch);
+    // Body
+    var bodyGrad = ctx.createLinearGradient(cx, cy, cx, cy+ch);
     bodyGrad.addColorStop(0, '#1a2a3a');
     bodyGrad.addColorStop(1, '#0a1520');
     ctx.fillStyle = bodyGrad;
-    ctx.beginPath();
-    ctx.roundRect(cx, cy + ch * 0.3, cw, ch * 0.7, [3, 3, 5, 5]);
-    ctx.fill();
+    ctx.beginPath(); ctx.roundRect(cx, cy+ch*0.3, cw, ch*0.7, [3,3,5,5]); ctx.fill();
 
     // Cabin
     ctx.fillStyle = '#0d1e2e';
-    ctx.beginPath();
-    ctx.roundRect(cx + cw * 0.18, cy, cw * 0.62, ch * 0.42, [4, 4, 2, 2]);
-    ctx.fill();
+    ctx.beginPath(); ctx.roundRect(cx+cw*0.18, cy, cw*0.62, ch*0.42, [4,4,2,2]); ctx.fill();
 
-    // Window shimmer
+    // Windows
     ctx.fillStyle = 'rgba(58,219,138,0.12)';
-    ctx.beginPath();
-    ctx.roundRect(cx + cw * 0.22, cy + ch * 0.04, cw * 0.25, ch * 0.30, 2);
-    ctx.fill();
+    ctx.beginPath(); ctx.roundRect(cx+cw*0.22, cy+ch*0.04, cw*0.25, ch*0.30, 2); ctx.fill();
     ctx.fillStyle = 'rgba(90,180,255,0.12)';
-    ctx.beginPath();
-    ctx.roundRect(cx + cw * 0.52, cy + ch * 0.04, cw * 0.22, ch * 0.30, 2);
-    ctx.fill();
+    ctx.beginPath(); ctx.roundRect(cx+cw*0.52, cy+ch*0.04, cw*0.22, ch*0.30, 2); ctx.fill();
 
     // Wheels
-    [0.16, 0.76].forEach(function (wf) {
-      var wx = cx + cw * wf;
-      var wy = cy + ch;
-      ctx.beginPath();
-      ctx.arc(wx, wy, ch * 0.28, 0, Math.PI * 2);
-      ctx.fillStyle = '#0a0f18';
-      ctx.fill();
-      ctx.beginPath();
-      ctx.arc(wx, wy, ch * 0.14, 0, Math.PI * 2);
-      ctx.fillStyle = '#1e3040';
-      ctx.fill();
-      // Rim glint
-      ctx.beginPath();
-      ctx.arc(wx, wy, ch * 0.10, 0, Math.PI * 2);
-      ctx.strokeStyle = 'rgba(58,219,138,0.35)';
-      ctx.lineWidth = 1;
-      ctx.stroke();
+    [0.16, 0.76].forEach(function(wf) {
+      var wx = cx + cw * wf, wy = cy + ch;
+      ctx.beginPath(); ctx.arc(wx, wy, ch*0.28, 0, Math.PI*2); ctx.fillStyle='#0a0f18'; ctx.fill();
+      ctx.beginPath(); ctx.arc(wx, wy, ch*0.14, 0, Math.PI*2); ctx.fillStyle='#1e3040'; ctx.fill();
+      ctx.beginPath(); ctx.arc(wx, wy, ch*0.10, 0, Math.PI*2);
+      ctx.strokeStyle='rgba(58,219,138,0.35)'; ctx.lineWidth=1; ctx.stroke();
     });
 
-    // Headlights (right side)
-    ctx.beginPath();
-    ctx.ellipse(cx + cw * 0.96, cy + ch * 0.50, 4, 3, 0, 0, Math.PI * 2);
-    ctx.fillStyle = '#ddeeff';
-    ctx.fill();
-    ctx.beginPath();
-    ctx.ellipse(cx + cw * 0.96, cy + ch * 0.50, 7, 5, 0, 0, Math.PI * 2);
-    ctx.fillStyle = 'rgba(200,230,255,0.25)';
-    ctx.fill();
+    // Headlights (right)
+    ctx.beginPath(); ctx.ellipse(cx+cw*0.96, cy+ch*0.50, 4, 3, 0, 0, Math.PI*2);
+    ctx.fillStyle='#ddeeff'; ctx.fill();
+    ctx.beginPath(); ctx.ellipse(cx+cw*0.96, cy+ch*0.50, 7, 5, 0, 0, Math.PI*2);
+    ctx.fillStyle='rgba(200,230,255,0.25)'; ctx.fill();
 
-    // Tail lights (left side)
-    ctx.beginPath();
-    ctx.ellipse(cx + cw * 0.04, cy + ch * 0.50, 4, 3, 0, 0, Math.PI * 2);
-    ctx.fillStyle = '#ff2244';
-    ctx.fill();
-    ctx.beginPath();
-    ctx.ellipse(cx + cw * 0.04, cy + ch * 0.50, 7, 5, 0, 0, Math.PI * 2);
-    ctx.fillStyle = 'rgba(255,30,60,0.20)';
-    ctx.fill();
+    // Tail lights (left)
+    ctx.beginPath(); ctx.ellipse(cx+cw*0.04, cy+ch*0.50, 4, 3, 0, 0, Math.PI*2);
+    ctx.fillStyle='#ff2244'; ctx.fill();
+    ctx.beginPath(); ctx.ellipse(cx+cw*0.04, cy+ch*0.50, 7, 5, 0, 0, Math.PI*2);
+    ctx.fillStyle='rgba(255,30,60,0.20)'; ctx.fill();
   }
 
-  /* ── Hex + alpha helper ───────────────────────────────────────────────── */
-  function hexAlpha(hex, a) {
-    var r = parseInt(hex.slice(1, 3), 16);
-    var g = parseInt(hex.slice(3, 5), 16);
-    var b = parseInt(hex.slice(5, 7), 16);
-    return 'rgba(' + r + ',' + g + ',' + b + ',' + a.toFixed(3) + ')';
-  }
-
-  /* ── Animation loop ───────────────────────────────────────────────────── */
+  /* ── Animation loop (runs in parent window's rAF) ── */
   function loop(t) {
-    var dt = Math.min(t - lastT, 100); // clamp to avoid giant jumps on tab restore
+    var dt = Math.min(t - lastT, 100);
     lastT = t;
-    drawNightSky(t);
+    drawNightSky();
     drawAurora(t);
     drawStars(t);
     drawSnow(dt);
     drawRoad();
-    drawCar(t, dt);
-    requestAnimationFrame(loop);
+    drawCar(dt);
+    p.requestAnimationFrame(loop);
   }
-  requestAnimationFrame(function(t) { lastT = t; requestAnimationFrame(loop); });
+  p.requestAnimationFrame(function(t) { lastT = t; p.requestAnimationFrame(loop); });
+
 })();
 </script>
 """
 
 
 def render_theme() -> None:
-    st.markdown(THEME, unsafe_allow_html=True)
+    # CSS injected directly into the page — <style> tags are allowed by st.markdown
+    st.markdown(CSS, unsafe_allow_html=True)
+    # JS runs in a real iframe (which actually executes scripts), then uses
+    # window.parent to paint on the real Streamlit page behind all content.
+    # height=0 hides the iframe completely.
+    components.html(CANVAS_JS, height=0, scrolling=False)

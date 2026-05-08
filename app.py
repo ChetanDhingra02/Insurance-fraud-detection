@@ -1,5 +1,9 @@
 import streamlit as st
 import html as html_mod
+from pathlib import Path
+
+import joblib
+import pandas as pd
 
 THRESHOLD = 0.25
 
@@ -581,6 +585,104 @@ def action_meta(p):
     return "Process Normally", \
            "No elevated fraud signal detected. Claim may proceed through the standard processing route."
 
+@st.cache_resource
+def load_artifacts():
+    """Load the trained model and the input template from files in the GitHub repo."""
+    base_dir = Path(__file__).resolve().parent
+    model_path = base_dir / "deploy_fraud_model.pkl"
+    template_path = base_dir / "deploy_input_template.pkl"
+
+    if not model_path.exists():
+        raise FileNotFoundError(f"Missing model file: {model_path.name}")
+    if not template_path.exists():
+        raise FileNotFoundError(f"Missing input template file: {template_path.name}")
+
+    model = joblib.load(model_path)
+    template = joblib.load(template_path)
+    return model, template
+
+
+def get_template_columns(template, model=None):
+    """Infer the exact feature order expected by the trained model."""
+    if isinstance(template, pd.DataFrame):
+        return list(template.columns)
+    if isinstance(template, pd.Series):
+        return list(template.index)
+    if isinstance(template, dict):
+        return list(template.keys())
+    if isinstance(template, (list, tuple)):
+        return list(template)
+    if hasattr(template, "columns"):
+        return list(template.columns)
+    if model is not None and hasattr(model, "feature_names_in_"):
+        return list(model.feature_names_in_)
+    raise ValueError("Could not infer feature columns from deploy_input_template.pkl")
+
+
+def make_input_dataframe(template, model, values):
+    """
+    Create the one-row model input.
+
+    This keeps the exact columns/order from deploy_input_template.pkl, then fills
+    the fields that exist in the Streamlit UI. Any extra columns stay at the
+    template's default value, which prevents column mismatch errors.
+    """
+    columns = get_template_columns(template, model)
+
+    if isinstance(template, pd.DataFrame):
+        if len(template) > 0:
+            input_df = template.iloc[[0]].copy()
+        else:
+            input_df = pd.DataFrame([{col: 0 for col in columns}])
+    elif isinstance(template, pd.Series):
+        input_df = pd.DataFrame([template.to_dict()])
+    elif isinstance(template, dict):
+        input_df = pd.DataFrame([template])
+    else:
+        input_df = pd.DataFrame([{col: 0 for col in columns}])
+
+    # Make sure every required column exists and the order matches the template.
+    for col in columns:
+        if col not in input_df.columns:
+            input_df[col] = 0
+    input_df = input_df[columns]
+
+    # Fill direct column matches.
+    for key, value in values.items():
+        if key in input_df.columns:
+            input_df.at[input_df.index[0], key] = value
+
+    # Handle a common spelling difference from the original insurance dataset.
+    if "policy_deductible" in input_df.columns:
+        input_df.at[input_df.index[0], "policy_deductible"] = values["policy_deductable"]
+    if "policy_deductable" in input_df.columns:
+        input_df.at[input_df.index[0], "policy_deductable"] = values["policy_deductable"]
+
+    # If the template is already one-hot encoded, activate matching dummy columns too.
+    for categorical_col in ["incident_severity", "incident_type"]:
+        selected_value = str(values[categorical_col])
+        for col in input_df.columns:
+            clean_col = str(col).lower()
+            clean_val = selected_value.lower().replace(" ", "_").replace("-", "_").replace("/", "_")
+            if categorical_col in clean_col and clean_val in clean_col:
+                input_df.at[input_df.index[0], col] = 1
+
+    return input_df
+
+
+def predict_fraud_probability(model, input_df):
+    """Return probability for the fraud class when possible; otherwise fallback safely."""
+    if hasattr(model, "predict_proba"):
+        probs = model.predict_proba(input_df)
+        return float(probs[0][1])
+
+    # Fallback for models saved without predict_proba.
+    pred = model.predict(input_df)[0]
+    try:
+        return float(pred)
+    except Exception:
+        return 1.0 if str(pred).lower() in {"1", "true", "fraud", "yes"} else 0.0
+
 
 # ── HEADER ─────────────────────────────────────────────────────────
 rh("""
@@ -660,8 +762,29 @@ predict = st.button("⚡ Run Fraud Risk Assessment →")
 
 # ── RESULTS ────────────────────────────────────────────────────────
 if predict:
-    import random
-    fraud_prob = random.uniform(0.05, 0.92)
+    input_values = {
+        "incident_severity": incident_severity,
+        "incident_type": incident_type,
+        "number_of_vehicles_involved": number_of_vehicles_involved,
+        "bodily_injuries": bodily_injuries,
+        "witnesses": witnesses,
+        "months_as_customer": months_as_customer,
+        "total_claim_amount": total_claim_amount,
+        "injury_claim": injury_claim,
+        "property_claim": property_claim,
+        "vehicle_claim": vehicle_claim,
+        "policy_annual_premium": policy_annual_premium,
+        "policy_deductable": policy_deductable,
+    }
+
+    try:
+        model, template = load_artifacts()
+        input_df = make_input_dataframe(template, model, input_values)
+        fraud_prob = predict_fraud_probability(model, input_df)
+        fraud_prob = min(max(float(fraud_prob), 0.0), 1.0)
+    except Exception as e:
+        st.error(f"Model could not run: {e}")
+        st.stop()
 
     fraud_pred = int(fraud_prob >= THRESHOLD)
     badge_cls, risk_label, text_col, bar_col = risk_meta(fraud_prob)

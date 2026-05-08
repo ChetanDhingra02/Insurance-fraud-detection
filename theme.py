@@ -175,21 +175,33 @@ div.stButton > button:active { box-shadow:0 1px 0 rgba(10,60,40,0.55),0 3px 12px
   /* ── Canvas setup ─────────────────────────────────────────────────────── */
   var cv = document.createElement('canvas');
   cv.id = '__night_sky__';
+  // Sit behind everything: fixed, full-viewport, z-index -1 on <html> element
+  // so it underlays the entire Streamlit stacking context.
   cv.style.cssText = [
     'position:fixed',
     'top:0', 'left:0',
     'width:100vw', 'height:100vh',
     'pointer-events:none',
-    'z-index:0',
+    'z-index:-1',
     'display:block',
   ].join(';');
-  document.body.appendChild(cv);
+  // Attach to <html> (documentElement) so z-index:-1 is relative to the
+  // viewport stacking context, not buried inside a Streamlit div.
+  document.documentElement.appendChild(cv);
 
-  /* Push all Streamlit content above the canvas */
+  /* Make every Streamlit layer transparent so canvas shows through,
+     and ensure they sit in the normal flow above z-index:-1 canvas */
   var style = document.createElement('style');
   style.textContent = [
-    '.stApp { position:relative; z-index:1; }',
-    '[data-testid="stAppViewContainer"] { position:relative; z-index:1; }',
+    'html { background: #04080f !important; }',
+    'body { background: transparent !important; }',
+    '.stApp { background: transparent !important; position: relative; }',
+    '[data-testid="stAppViewContainer"] { background: transparent !important; }',
+    '[data-testid="stAppViewBlockContainer"] { background: transparent !important; }',
+    '[data-testid="stMain"] { background: transparent !important; }',
+    '.main { background: transparent !important; }',
+    '[data-testid="block-container"] { background: transparent !important; }',
+    '.block-container { background: transparent !important; }',
   ].join('\n');
   document.head.appendChild(style);
 
@@ -360,7 +372,7 @@ div.stButton > button:active { box-shadow:0 1px 0 rgba(10,60,40,0.55),0 3px 12px
   }
 
   function drawCar(t, dt) {
-    carX += CAR_SPEED;
+    carX += CAR_SPEED * dt; // dt-based so speed is consistent across frame rates
     if (carX > 1.18) carX = -0.18;
 
     var cx   = carX * W;
@@ -465,7 +477,7 @@ div.stButton > button:active { box-shadow:0 1px 0 rgba(10,60,40,0.55),0 3px 12px
 
   /* ── Animation loop ───────────────────────────────────────────────────── */
   function loop(t) {
-    var dt = t - lastT;
+    var dt = Math.min(t - lastT, 100); // clamp to avoid giant jumps on tab restore
     lastT = t;
     drawNightSky(t);
     drawAurora(t);

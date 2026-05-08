@@ -1,4 +1,4 @@
-<import streamlit as st
+import streamlit as st
 import html as html_mod
 from pathlib import Path
 

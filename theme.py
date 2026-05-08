@@ -653,26 +653,36 @@ div.stButton > button:active {
 <!-- ═══ Snow / light particles ═══ -->
 <script>
 (function(){
-  const layer = document.getElementById('aurora-sky');
-  const particles = 40;
-  for(let i = 0; i < particles; i++){
-    const p = document.createElement('div');
-    p.className = 'snow';
-    const sz = Math.random() * 3 + 1.5;
+  function spawnSnow() {
+    const layer = document.getElementById('aurora-sky');
+    if (!layer) { setTimeout(spawnSnow, 80); return; }
+    if (layer.dataset.snowSpawned) return;
+    layer.dataset.snowSpawned = '1';
     const colors = ['#3aab7b','#2bb5a0','#5a86c8','#7c68c2','#c8e8d8'];
-    const col = colors[Math.floor(Math.random() * colors.length)];
-    p.style.cssText = `
-      width:${sz}px; height:${sz}px;
-      left:${Math.random()*100}vw;
-      top:${Math.random()*-20}vh;
-      background:${col};
-      --sd:${(Math.random()*14+8).toFixed(1)}s;
-      --sdelay:-${(Math.random()*20).toFixed(1)}s;
-      --sop:${(Math.random()*0.45+0.20).toFixed(2)};
-      --dx:${(Math.random()*60-30).toFixed(0)}px;
-      opacity:0;
-    `;
-    layer.appendChild(p);
+    for (let i = 0; i < 40; i++) {
+      const p = document.createElement('div');
+      p.className = 'snow';
+      const sz = Math.random() * 3 + 1.5;
+      const col = colors[Math.floor(Math.random() * colors.length)];
+      p.style.cssText = [
+        'width:'  + sz + 'px',
+        'height:' + sz + 'px',
+        'left:'   + (Math.random()*100) + 'vw',
+        'top:'    + (Math.random()*-20) + 'vh',
+        'background:' + col,
+        '--sd:'     + (Math.random()*14+8).toFixed(1)  + 's',
+        '--sdelay:-'+ (Math.random()*20).toFixed(1)    + 's',
+        '--sop:'    + (Math.random()*0.45+0.20).toFixed(2),
+        '--dx:'     + (Math.random()*60-30).toFixed(0) + 'px',
+        'opacity:0'
+      ].join(';');
+      layer.appendChild(p);
+    }
+  }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', spawnSnow);
+  } else {
+    spawnSnow();
   }
 })();
 </script>

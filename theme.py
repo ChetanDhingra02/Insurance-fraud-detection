@@ -613,15 +613,9 @@ div.stButton > button:active {
       <ellipse cx="128" cy="122" rx="5" ry="3" fill="#5a3a1a"/>
     </g>
 
-    <!-- Aurora shimmer on back -->
-    <ellipse cx="115" cy="60" rx="30" ry="10" fill="url(#auroraShimmer)" opacity="0.35"/>
-    <defs>
-      <linearGradient id="auroraShimmer" x1="0" y1="0" x2="1" y2="0">
-        <stop offset="0%" stop-color="#3aab7b"/>
-        <stop offset="50%" stop-color="#5a86c8"/>
-        <stop offset="100%" stop-color="#7c68c2"/>
-      </linearGradient>
-    </defs>
+    <!-- Aurora shimmer on back (solid teal, no defs needed) -->
+    <ellipse cx="115" cy="60" rx="30" ry="10" fill="#3aab7b" opacity="0.28"/>
+    <ellipse cx="125" cy="62" rx="18" ry="7"  fill="#5a86c8" opacity="0.20"/>
   </g>
 </svg>
 </div>
@@ -629,24 +623,20 @@ div.stButton > button:active {
 <!-- ═══ Floating aurora wisp ═══ -->
 <div class="float-wisp">
 <svg width="260" height="90" viewBox="0 0 260 90" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <defs>
-    <filter id="wispBlur">
-      <feGaussianBlur stdDeviation="6" result="blur"/>
-      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
-    </filter>
-  </defs>
-  <!-- Wisp bands -->
-  <path d="M10 55 Q60 20 130 35 Q190 50 250 28" stroke="#3aab7b" stroke-width="22"
-        stroke-linecap="round" fill="none" opacity="0.28" filter="url(#wispBlur)"/>
-  <path d="M10 65 Q70 30 140 48 Q200 62 250 42" stroke="#5a86c8" stroke-width="16"
-        stroke-linecap="round" fill="none" opacity="0.22" filter="url(#wispBlur)"/>
-  <path d="M30 72 Q90 42 150 56 Q210 68 250 50" stroke="#7c68c2" stroke-width="10"
-        stroke-linecap="round" fill="none" opacity="0.18" filter="url(#wispBlur)"/>
-  <!-- Crisp inner lines -->
+  <!-- Wisp bands — blur via CSS style attribute, no SVG filter needed -->
+  <g style="filter:blur(9px)">
+    <path d="M10 55 Q60 20 130 35 Q190 50 250 28" stroke="#3aab7b" stroke-width="22"
+          stroke-linecap="round" fill="none" opacity="0.32"/>
+    <path d="M10 65 Q70 30 140 48 Q200 62 250 42" stroke="#5a86c8" stroke-width="16"
+          stroke-linecap="round" fill="none" opacity="0.26"/>
+    <path d="M30 72 Q90 42 150 56 Q210 68 250 50" stroke="#7c68c2" stroke-width="10"
+          stroke-linecap="round" fill="none" opacity="0.22"/>
+  </g>
+  <!-- Crisp inner lines — no blur -->
   <path d="M20 54 Q80 22 140 38 Q195 52 248 32" stroke="#2bb5a0" stroke-width="2"
-        stroke-linecap="round" fill="none" opacity="0.50"/>
+        stroke-linecap="round" fill="none" opacity="0.55"/>
   <path d="M25 62 Q85 34 145 50 Q200 62 248 44" stroke="#5a86c8" stroke-width="1.5"
-        stroke-linecap="round" fill="none" opacity="0.38"/>
+        stroke-linecap="round" fill="none" opacity="0.42"/>
 </svg>
 </div>
 

@@ -63,6 +63,11 @@ footer                          { display:none !important; }
   pointer-events:none !important; z-index:0; overflow:hidden;
 }
 
+#aurora-snow {
+  position:fixed; top:0; left:0; width:100%; height:100%;
+  pointer-events:none !important; z-index:0; overflow:hidden;
+}
+
 /* Wavy aurora curtain strips */
 .aurora-curtain {
   position:absolute;
@@ -640,42 +645,49 @@ div.stButton > button:active {
 </svg>
 </div>
 
-<!-- ═══ Snow / light particles ═══ -->
-<script>
-(function(){
-  function spawnSnow() {
-    const layer = document.getElementById('aurora-sky');
-    if (!layer) { setTimeout(spawnSnow, 80); return; }
-    if (layer.dataset.snowSpawned) return;
-    layer.dataset.snowSpawned = '1';
-    const colors = ['#3aab7b','#2bb5a0','#5a86c8','#7c68c2','#c8e8d8'];
-    for (let i = 0; i < 40; i++) {
-      const p = document.createElement('div');
-      p.className = 'snow';
-      const sz = Math.random() * 3 + 1.5;
-      const col = colors[Math.floor(Math.random() * colors.length)];
-      p.style.cssText = [
-        'width:'  + sz + 'px',
-        'height:' + sz + 'px',
-        'left:'   + (Math.random()*100) + 'vw',
-        'top:'    + (Math.random()*-20) + 'vh',
-        'background:' + col,
-        '--sd:'     + (Math.random()*14+8).toFixed(1)  + 's',
-        '--sdelay:-'+ (Math.random()*20).toFixed(1)    + 's',
-        '--sop:'    + (Math.random()*0.45+0.20).toFixed(2),
-        '--dx:'     + (Math.random()*60-30).toFixed(0) + 'px',
-        'opacity:0'
-      ].join(';');
-      layer.appendChild(p);
-    }
-  }
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', spawnSnow);
-  } else {
-    spawnSnow();
-  }
-})();
-</script>
+<!-- ═══ Snow / light particles — CSS-only, no JS ═══ -->
+<div id="aurora-snow">
+  <div class="snow" style="width:2.47px;height:2.47px;left:39.48vw;top:-0.97vh;background:#2bb5a0;--sd:19.5s;--sdelay:-1.9s;--sop:0.46;--dx:25px;opacity:0;"></div>
+  <div class="snow" style="width:2.14px;height:2.14px;left:43.36vw;top:-1.40vh;background:#3aab7b;--sd:9.3s;--sdelay:-8.5s;--sop:0.57;--dx:-23px;opacity:0;"></div>
+  <div class="snow" style="width:2.17px;height:2.17px;left:94.77vw;top:-11.54vh;background:#c8e8d8;--sd:13.6s;--sdelay:-19.5s;--sop:0.22;--dx:22px;opacity:0;"></div>
+  <div class="snow" style="width:2.37px;height:2.37px;left:54.07vw;top:-11.42vh;background:#2bb5a0;--sd:15.8s;--sdelay:-13.6s;--sop:0.25;--dx:4px;opacity:0;"></div>
+  <div class="snow" style="width:2.06px;height:2.06px;left:54.77vw;top:-1.26vh;background:#3aab7b;--sd:8.8s;--sdelay:-4.1s;--sop:0.51;--dx:-4px;opacity:0;"></div>
+  <div class="snow" style="width:2.44px;height:2.44px;left:92.34vw;top:-7.23vh;background:#c8e8d8;--sd:11.5s;--sdelay:-3.6s;--sop:0.55;--dx:-25px;opacity:0;"></div>
+  <div class="snow" style="width:2.40px;height:2.40px;left:87.51vw;top:-14.59vh;background:#7c68c2;--sd:12.0s;--sdelay:-19.6s;--sop:0.25;--dx:-5px;opacity:0;"></div>
+  <div class="snow" style="width:3.77px;height:3.77px;left:93.33vw;top:-8.43vh;background:#2bb5a0;--sd:21.5s;--sdelay:-1.6s;--sop:0.45;--dx:17px;opacity:0;"></div>
+  <div class="snow" style="width:3.96px;height:3.96px;left:69.53vw;top:-11.89vh;background:#5a86c8;--sd:16.1s;--sdelay:-9.1s;--sop:0.58;--dx:27px;opacity:0;"></div>
+  <div class="snow" style="width:2.92px;height:2.92px;left:6.07vw;top:-14.03vh;background:#3aab7b;--sd:17.1s;--sdelay:-19.9s;--sop:0.57;--dx:-13px;opacity:0;"></div>
+  <div class="snow" style="width:2.66px;height:2.66px;left:2.26vw;top:-9.23vh;background:#5a86c8;--sd:10.4s;--sdelay:-2.3s;--sop:0.23;--dx:16px;opacity:0;"></div>
+  <div class="snow" style="width:1.89px;height:1.89px;left:39.79vw;top:-18.34vh;background:#2bb5a0;--sd:15.0s;--sdelay:-3.3s;--sop:0.38;--dx:-13px;opacity:0;"></div>
+  <div class="snow" style="width:1.91px;height:1.91px;left:86.40vw;top:-5.57vh;background:#7c68c2;--sd:13.8s;--sdelay:-7.2s;--sop:0.60;--dx:27px;opacity:0;"></div>
+  <div class="snow" style="width:1.95px;height:1.95px;left:15.13vw;top:-13.17vh;background:#2bb5a0;--sd:8.2s;--sdelay:-16.6s;--sop:0.28;--dx:-13px;opacity:0;"></div>
+  <div class="snow" style="width:1.94px;height:1.94px;left:36.93vw;top:-11.33vh;background:#c8e8d8;--sd:21.3s;--sdelay:-13.8s;--sop:0.43;--dx:7px;opacity:0;"></div>
+  <div class="snow" style="width:3.53px;height:3.53px;left:45.66vw;top:-17.42vh;background:#3aab7b;--sd:21.3s;--sdelay:-13.6s;--sop:0.45;--dx:-6px;opacity:0;"></div>
+  <div class="snow" style="width:2.68px;height:2.68px;left:63.43vw;top:-1.24vh;background:#7c68c2;--sd:8.9s;--sdelay:-4.2s;--sop:0.27;--dx:-10px;opacity:0;"></div>
+  <div class="snow" style="width:1.66px;height:1.66px;left:56.68vw;top:-10.73vh;background:#3aab7b;--sd:21.3s;--sdelay:-12.3s;--sop:0.23;--dx:-18px;opacity:0;"></div>
+  <div class="snow" style="width:2.63px;height:2.63px;left:95.55vw;top:-12.05vh;background:#5a86c8;--sd:14.6s;--sdelay:-2.3s;--sop:0.42;--dx:29px;opacity:0;"></div>
+  <div class="snow" style="width:2.94px;height:2.94px;left:8.59vw;top:-2.04vh;background:#5a86c8;--sd:12.8s;--sdelay:-5.3s;--sop:0.57;--dx:-20px;opacity:0;"></div>
+  <div class="snow" style="width:1.57px;height:1.57px;left:36.18vw;top:-13.80vh;background:#c8e8d8;--sd:20.8s;--sdelay:-15.2s;--sop:0.33;--dx:9px;opacity:0;"></div>
+  <div class="snow" style="width:1.77px;height:1.77px;left:51.84vw;top:-18.17vh;background:#5a86c8;--sd:13.0s;--sdelay:-4.5s;--sop:0.44;--dx:0px;opacity:0;"></div>
+  <div class="snow" style="width:3.41px;height:3.41px;left:81.15vw;top:-19.70vh;background:#c8e8d8;--sd:19.9s;--sdelay:-16.1s;--sop:0.57;--dx:14px;opacity:0;"></div>
+  <div class="snow" style="width:2.18px;height:2.18px;left:49.28vw;top:-14.62vh;background:#c8e8d8;--sd:21.9s;--sdelay:-15.8s;--sop:0.41;--dx:-18px;opacity:0;"></div>
+  <div class="snow" style="width:3.32px;height:3.32px;left:44.72vw;top:-18.74vh;background:#5a86c8;--sd:21.8s;--sdelay:-19.1s;--sop:0.36;--dx:-17px;opacity:0;"></div>
+  <div class="snow" style="width:2.18px;height:2.18px;left:33.77vw;top:-9.65vh;background:#2bb5a0;--sd:21.8s;--sdelay:-12.2s;--sop:0.20;--dx:25px;opacity:0;"></div>
+  <div class="snow" style="width:2.53px;height:2.53px;left:83.46vw;top:-2.40vh;background:#3aab7b;--sd:13.4s;--sdelay:-14.2s;--sop:0.29;--dx:23px;opacity:0;"></div>
+  <div class="snow" style="width:2.80px;height:2.80px;left:8.67vw;top:-18.92vh;background:#5a86c8;--sd:18.1s;--sdelay:-9.3s;--sop:0.53;--dx:-25px;opacity:0;"></div>
+  <div class="snow" style="width:1.98px;height:1.98px;left:2.75vw;top:-11.82vh;background:#2bb5a0;--sd:14.5s;--sdelay:-13.1s;--sop:0.48;--dx:6px;opacity:0;"></div>
+  <div class="snow" style="width:2.92px;height:2.92px;left:15.59vw;top:-10.97vh;background:#5a86c8;--sd:8.3s;--sdelay:-16.0s;--sop:0.53;--dx:-24px;opacity:0;"></div>
+  <div class="snow" style="width:3.75px;height:3.75px;left:43.38vw;top:-17.43vh;background:#2bb5a0;--sd:19.6s;--sdelay:-4.2s;--sop:0.31;--dx:-12px;opacity:0;"></div>
+  <div class="snow" style="width:2.22px;height:2.22px;left:32.60vw;top:-10.89vh;background:#c8e8d8;--sd:19.7s;--sdelay:-1.2s;--sop:0.53;--dx:24px;opacity:0;"></div>
+  <div class="snow" style="width:3.49px;height:3.49px;left:42.06vw;top:-18.35vh;background:#c8e8d8;--sd:15.0s;--sdelay:-10.6s;--sop:0.44;--dx:-29px;opacity:0;"></div>
+  <div class="snow" style="width:2.82px;height:2.82px;left:60.86vw;top:-15.52vh;background:#2bb5a0;--sd:10.1s;--sdelay:-2.8s;--sop:0.48;--dx:-23px;opacity:0;"></div>
+  <div class="snow" style="width:1.69px;height:1.69px;left:53.07vw;top:-9.65vh;background:#c8e8d8;--sd:18.9s;--sdelay:-17.7s;--sop:0.23;--dx:-19px;opacity:0;"></div>
+  <div class="snow" style="width:1.63px;height:1.63px;left:50.77vw;top:-11.23vh;background:#3aab7b;--sd:18.6s;--sdelay:-18.2s;--sop:0.40;--dx:7px;opacity:0;"></div>
+  <div class="snow" style="width:3.02px;height:3.02px;left:19.94vw;top:-5.54vh;background:#c8e8d8;--sd:15.1s;--sdelay:-16.1s;--sop:0.43;--dx:-15px;opacity:0;"></div>
+  <div class="snow" style="width:3.07px;height:3.07px;left:92.28vw;top:-17.86vh;background:#5a86c8;--sd:10.8s;--sdelay:-9.0s;--sop:0.39;--dx:-6px;opacity:0;"></div>
+  <div class="snow" style="width:2.45px;height:2.45px;left:42.83vw;top:-4.25vh;background:#2bb5a0;--sd:12.2s;--sdelay:-2.4s;--sop:0.55;--dx:26px;opacity:0;"></div>
+  <div class="snow" style="width:3.43px;height:3.43px;left:14.30vw;top:-17.66vh;background:#5a86c8;--sd:21.5s;--sdelay:-4.4s;--sop:0.63;--dx:-6px;opacity:0;"></div>
+</div>
 """
 
 

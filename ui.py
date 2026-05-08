@@ -132,7 +132,7 @@ def render_results(fraud_prob: float, inputs: dict) -> None:
   </div>
 
   <div class="ptrack">
-    <div class="ptrack-fill" style="width:{pct}%;background:{bar_col};--clr:{bar_col};"></div>
+    <div class="ptrack-fill" style="width:{pct}%;background:{bar_col};box-shadow:0 0 10px {bar_col};"></div>
   </div>
 
   <div class="gauge">

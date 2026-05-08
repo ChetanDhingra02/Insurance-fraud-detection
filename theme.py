@@ -2,17 +2,19 @@ import streamlit as st
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Streamlit strips <script> tags from st.markdown even with unsafe_allow_html.
-# The workaround: use an <svg onload="..."> attribute — event handlers ARE
-# executed in the real page context, not an iframe. We put the full JS inside
-# a <template> tag (which Streamlit leaves alone), then the onload handler
-# grabs it, wraps it in a real <script>, and appends it to <head>.
-# This runs once per page load; the window.__aurora_running__ guard prevents
-# duplicate injection on Streamlit reruns.
+# Fixed aurora night-sky theme for Streamlit.
+#
+# Key fixes vs the previous version:
+#  1. Canvas stays position:fixed (correct) but ALL Streamlit wrapper divs now
+#     get an explicit z-index > 0 so they stack above the canvas layer (z:-1).
+#  2. ctx.roundRect polyfill added — older Chrome / Edge builds don't support
+#     the native API and throw "ctx.roundRect is not a function".
+#  3. The canvas is appended to document.body (not insertBefore firstChild)
+#     so Streamlit's own DOM mutations don't accidentally remove it.
+#  4. A MutationObserver re-checks the canvas is still in the DOM every time
+#     Streamlit re-renders and re-injects it if it gets wiped.
 # ─────────────────────────────────────────────────────────────────────────────
 
-# The full canvas animation, stored in a <template> so Streamlit doesn't parse
-# or strip it. The SVG onload bootstrapper moves it to a real <script> in <head>.
 THEME = r"""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@300;400;500;600;700;800&display=swap');
@@ -34,15 +36,47 @@ THEME = r"""
   --border:     rgba(58,219,138,0.16);
   --radius:     18px;
 }
+
+/* ── Global font / colour resets ── */
 html, body, [class*="css"] { font-family:'Nunito',sans-serif !important; color:var(--ink) !important; }
 html { background:#04080f !important; }
 body { background:transparent !important; }
-.stApp,[data-testid="stAppViewContainer"],[data-testid="stAppViewBlockContainer"],
-[data-testid="stMain"],.main,[data-testid="block-container"],.block-container,
-section[data-testid="stSidebar"],[data-testid="stVerticalBlock"] { background:transparent !important; }
-[data-testid="stHeader"],[data-testid="stDecoration"],[data-testid="stToolbar"],
-[data-testid="stStatusWidget"],footer { display:none !important; }
+
+/* ── Make every Streamlit layer transparent so the canvas shows through ── */
+.stApp,
+[data-testid="stAppViewContainer"],
+[data-testid="stAppViewBlockContainer"],
+[data-testid="stMain"],
+.main,
+[data-testid="block-container"],
+.block-container,
+section[data-testid="stSidebar"],
+[data-testid="stVerticalBlock"] {
+  background: transparent !important;
+}
+
+/* ── Ensure Streamlit content stacks ABOVE the canvas (z-index:-1) ── */
+/* The canvas sits at z-index:-1; everything that should appear on top needs
+   an explicit stacking context with z >= 0.                              */
+.stApp                              { position: relative; z-index: 0; }
+[data-testid="stAppViewContainer"]  { position: relative; z-index: 0; }
+[data-testid="stMain"]              { position: relative; z-index: 0; }
+.main                               { position: relative; z-index: 0; }
+[data-testid="block-container"],
+.block-container                    { position: relative; z-index: 0; }
+
+/* ── Hide Streamlit chrome ── */
+[data-testid="stHeader"],
+[data-testid="stDecoration"],
+[data-testid="stToolbar"],
+[data-testid="stStatusWidget"],
+footer { display:none !important; }
+
 .main .block-container { max-width:1160px; padding:0 2rem 6rem; }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   UI COMPONENT STYLES  (unchanged from original)
+   ══════════════════════════════════════════════════════════════════════════ */
 
 .hdr { display:flex; align-items:center; justify-content:space-between; padding:1.1rem 0 1.0rem; border-bottom:1.5px solid var(--border); animation:slideDown 0.5s cubic-bezier(0.22,1,0.36,1) both; }
 @keyframes slideDown { from{opacity:0;transform:translateY(-8px)} to{opacity:1;transform:translateY(0)} }
@@ -128,47 +162,93 @@ div.stButton>button:active { box-shadow:0 1px 0 rgba(10,60,40,0.55),0 3px 12px r
 .driver-n { font-size:0.62rem; font-weight:800; width:22px; height:22px; border-radius:6px; background:rgba(58,219,138,0.08); border:1.5px solid rgba(58,219,138,0.22); color:#3adb8a; display:flex; align-items:center; justify-content:center; flex-shrink:0; margin-top:1px; }
 .driver-t { font-size:0.83rem; font-weight:800; color:var(--ink); margin-bottom:0.1rem; }
 .driver-d { font-size:0.77rem; color:var(--ink-40); line-height:1.55; }
-.footer { text-align:center; margin-top:3rem; padding-top:1.2rem; border-top:1.5px solid var(--border); font-size:0.68rem; color:var(--ink-40); }
+.footer { text-align:center; margin-top:3rem; padding-top:1.2rem; border-top:1.5px solid var(--border); font-size:0.68rem; color:var(--ink); }
 </style>
 
-<!-- The full canvas JS lives in a <template> so Streamlit's HTML sanitiser
-     leaves it completely untouched. The tiny SVG onload bootstrapper below
-     fires in the real page context, grabs the template content, wraps it in
-     a <script> element, and appends it to <head> so it executes once. -->
+<!-- Canvas animation lives in a <template> so Streamlit's HTML sanitiser
+     leaves the raw JS completely untouched.                               -->
 <template id="__aurora_tpl__">
 (function () {
   if (window.__aurora_running__) return;
   window.__aurora_running__ = true;
 
-  /* ── Make Streamlit layers transparent ── */
+  /* ─── ctx.roundRect polyfill (not available in all Chromium builds) ─── */
+  if (!CanvasRenderingContext2D.prototype.roundRect) {
+    CanvasRenderingContext2D.prototype.roundRect = function(x, y, w, h, r) {
+      var rad = Array.isArray(r) ? r[0] : (r || 0);
+      this.beginPath();
+      this.moveTo(x + rad, y);
+      this.lineTo(x + w - rad, y);
+      this.quadraticCurveTo(x + w, y, x + w, y + rad);
+      this.lineTo(x + w, y + h - rad);
+      this.quadraticCurveTo(x + w, y + h, x + w - rad, y + h);
+      this.lineTo(x + rad, y + h);
+      this.quadraticCurveTo(x, y + h, x, y + h - rad);
+      this.lineTo(x, y + rad);
+      this.quadraticCurveTo(x, y, x + rad, y);
+      this.closePath();
+      return this;
+    };
+  }
+
+  /* ─── Inject transparency styles so canvas shows through ─── */
   var s = document.createElement('style');
+  s.id = '__aurora_styles__';
   s.textContent = [
     'html{background:#04080f!important}',
     'body{background:transparent!important}',
-    '.stApp,[data-testid="stAppViewContainer"],[data-testid="stAppViewBlockContainer"],[data-testid="stMain"],.main,[data-testid="block-container"],.block-container{background:transparent!important}',
+    /* Make every Streamlit wrapper transparent but keep it above the canvas */
+    '.stApp,[data-testid="stAppViewContainer"],[data-testid="stAppViewBlockContainer"],[data-testid="stMain"],.main,[data-testid="block-container"],.block-container{background:transparent!important;position:relative;z-index:0;}',
+    /* The canvas sits at z-index:0 on body — body itself has no stacking context,
+       so fixed children at z:-1 go behind everything. We use z:0 on canvas and
+       rely on pointer-events:none so it never blocks clicks.              */
   ].join('');
   document.head.appendChild(s);
 
-  /* ── Canvas ── */
-  var cv = document.createElement('canvas');
-  cv.id = '__night_sky__';
-  cv.style.cssText = 'position:fixed;top:0;left:0;width:100vw;height:100vh;pointer-events:none;z-index:-1;display:block;';
-  document.body.insertBefore(cv, document.body.firstChild);
+  /* ─── Create the canvas ─── */
+  function mountCanvas() {
+    var existing = document.getElementById('__night_sky__');
+    if (existing) return existing;
+    var cv = document.createElement('canvas');
+    cv.id = '__night_sky__';
+    /* position:fixed keeps it covering the full viewport as you scroll.
+       z-index:-1 pushes it behind Streamlit's z-index:0 content layers. */
+    cv.style.cssText = 'position:fixed;top:0;left:0;width:100vw;height:100vh;pointer-events:none;z-index:-1;display:block;';
+    document.body.appendChild(cv);
+    return cv;
+  }
 
+  var cv = mountCanvas();
   var ctx = cv.getContext('2d');
   var W, H;
+
   function resize() { W = cv.width = window.innerWidth; H = cv.height = window.innerHeight; }
   resize();
   window.addEventListener('resize', resize);
 
-  /* ── Stars ── */
+  /* ─── Re-mount canvas if Streamlit's React re-render removes it ─── */
+  var obs = new MutationObserver(function() {
+    if (!document.getElementById('__night_sky__')) {
+      cv = mountCanvas();
+      ctx = cv.getContext('2d');
+      resize();
+    }
+  });
+  obs.observe(document.body, { childList: true });
+
+  /* ─── Stars ─── */
   var stars = [];
   for (var i = 0; i < 260; i++) {
-    stars.push({ x:Math.random(), y:Math.random()*0.75, r:Math.random()*1.4+0.3,
-      base:Math.random()*0.5+0.25, spd:Math.random()*0.8+0.3, ph:Math.random()*Math.PI*2 });
+    stars.push({
+      x: Math.random(), y: Math.random() * 0.75,
+      r: Math.random() * 1.4 + 0.3,
+      base: Math.random() * 0.5 + 0.25,
+      spd: Math.random() * 0.8 + 0.3,
+      ph: Math.random() * Math.PI * 2
+    });
   }
 
-  /* ── Aurora bands ── */
+  /* ─── Aurora bands ─── */
   var bands = [
     {cx:0.12,w:0.55,y:0.18,h:0.22,c1:'#00ff88',c2:'#00ccaa',dur:22,ph:0.0},
     {cx:0.40,w:0.48,y:0.12,h:0.20,c1:'#5599ff',c2:'#8833ff',dur:28,ph:1.8},
@@ -177,55 +257,68 @@ div.stButton>button:active { box-shadow:0 1px 0 rgba(10,60,40,0.55),0 3px 12px r
     {cx:0.25,w:0.60,y:0.28,h:0.14,c1:'#00ffbb',c2:'#00aa55',dur:32,ph:2.6},
   ];
 
-  /* ── Snow ── */
+  /* ─── Snow ─── */
   var snowCols = ['#b8eedd','#8ecfff','#c8b8ff','#ffc8e8','#ffffff'];
   var flakes = [];
   for (var j = 0; j < 90; j++) flakes.push(mkFlake(false));
   function mkFlake(top) {
-    return { x:Math.random(), y:top?-0.02:Math.random(), r:Math.random()*2.2+0.8,
-      vx:(Math.random()-0.5)*0.00015, vy:Math.random()*0.00025+0.00008,
-      op:Math.random()*0.55+0.20, col:snowCols[Math.floor(Math.random()*snowCols.length)] };
+    return {
+      x: Math.random(), y: top ? -0.02 : Math.random(),
+      r: Math.random() * 2.2 + 0.8,
+      vx: (Math.random() - 0.5) * 0.00015,
+      vy: Math.random() * 0.00025 + 0.00008,
+      op: Math.random() * 0.55 + 0.20,
+      col: snowCols[Math.floor(Math.random() * snowCols.length)]
+    };
   }
 
-  /* ── Car ── */
+  /* ─── Car ─── */
   var carX = -0.18, CAR_SPEED = 0.00018, lastT = 0;
 
+  /* Helper: hex colour → rgba string */
   function ha(hex, a) {
-    var r=parseInt(hex.slice(1,3),16), g=parseInt(hex.slice(3,5),16), b=parseInt(hex.slice(5,7),16);
+    var r = parseInt(hex.slice(1,3),16),
+        g = parseInt(hex.slice(3,5),16),
+        b = parseInt(hex.slice(5,7),16);
     return 'rgba('+r+','+g+','+b+','+a.toFixed(3)+')';
   }
 
+  /* ─── Draw functions ─── */
   function drawSky() {
     var bg = ctx.createLinearGradient(0,0,0,H);
-    bg.addColorStop(0,'#02040c'); bg.addColorStop(0.6,'#04080f'); bg.addColorStop(1,'#060c18');
-    ctx.fillStyle=bg; ctx.fillRect(0,0,W,H);
+    bg.addColorStop(0,'#02040c');
+    bg.addColorStop(0.6,'#04080f');
+    bg.addColorStop(1,'#060c18');
+    ctx.fillStyle = bg; ctx.fillRect(0,0,W,H);
   }
 
   function drawAurora(t) {
-    ctx.save(); ctx.globalCompositeOperation='screen';
+    ctx.save(); ctx.globalCompositeOperation = 'screen';
     bands.forEach(function(b) {
-      var sway=Math.sin(t/(b.dur*1000)*Math.PI*2+b.ph);
-      var cy=(b.y+sway*0.04)*H, cx=b.cx*W, rw=b.w*W, rh=b.h*H;
-      var peak=0.38+Math.sin(t/(b.dur*800)+b.ph+1)*0.14;
-      var g=ctx.createRadialGradient(cx,cy,0,cx,cy,rw*0.7);
-      g.addColorStop(0,ha(b.c1,peak)); g.addColorStop(0.4,ha(b.c2,peak*0.65)); g.addColorStop(1,ha(b.c2,0));
-      ctx.filter='blur(28px)';
+      var sway = Math.sin(t / (b.dur * 1000) * Math.PI * 2 + b.ph);
+      var cy = (b.y + sway * 0.04) * H, cx = b.cx * W, rw = b.w * W, rh = b.h * H;
+      var peak = 0.38 + Math.sin(t / (b.dur * 800) + b.ph + 1) * 0.14;
+      var g = ctx.createRadialGradient(cx,cy,0,cx,cy,rw*0.7);
+      g.addColorStop(0, ha(b.c1, peak));
+      g.addColorStop(0.4, ha(b.c2, peak * 0.65));
+      g.addColorStop(1, ha(b.c2, 0));
+      ctx.filter = 'blur(28px)';
       ctx.beginPath(); ctx.ellipse(cx,cy,rw*0.7,rh*0.9,0,0,Math.PI*2);
-      ctx.fillStyle=g; ctx.fill();
+      ctx.fillStyle = g; ctx.fill();
     });
-    ctx.filter='none'; ctx.globalCompositeOperation='source-over'; ctx.restore();
+    ctx.filter = 'none'; ctx.globalCompositeOperation = 'source-over'; ctx.restore();
   }
 
   function drawStars(t) {
     stars.forEach(function(s) {
-      var op=Math.max(0,Math.min(1,s.base+Math.sin(t/1000*s.spd*Math.PI*2+s.ph)*0.28));
-      ctx.beginPath(); ctx.arc(s.x*W,s.y*H,s.r,0,Math.PI*2);
-      ctx.fillStyle='rgba(255,255,255,'+op+')'; ctx.fill();
-      if (s.r>1.1 && op>0.55) {
-        ctx.strokeStyle='rgba(255,255,255,'+(op*0.35)+')'; ctx.lineWidth=0.5;
+      var op = Math.max(0, Math.min(1, s.base + Math.sin(t/1000*s.spd*Math.PI*2+s.ph)*0.28));
+      ctx.beginPath(); ctx.arc(s.x*W, s.y*H, s.r, 0, Math.PI*2);
+      ctx.fillStyle = 'rgba(255,255,255,'+op+')'; ctx.fill();
+      if (s.r > 1.1 && op > 0.55) {
+        ctx.strokeStyle = 'rgba(255,255,255,'+(op*0.35)+')'; ctx.lineWidth = 0.5;
         ctx.beginPath();
-        ctx.moveTo(s.x*W-s.r*2.5,s.y*H); ctx.lineTo(s.x*W+s.r*2.5,s.y*H);
-        ctx.moveTo(s.x*W,s.y*H-s.r*2.5); ctx.lineTo(s.x*W,s.y*H+s.r*2.5);
+        ctx.moveTo(s.x*W - s.r*2.5, s.y*H); ctx.lineTo(s.x*W + s.r*2.5, s.y*H);
+        ctx.moveTo(s.x*W, s.y*H - s.r*2.5); ctx.lineTo(s.x*W, s.y*H + s.r*2.5);
         ctx.stroke();
       }
     });
@@ -233,72 +326,102 @@ div.stButton>button:active { box-shadow:0 1px 0 rgba(10,60,40,0.55),0 3px 12px r
 
   function drawSnow(dt) {
     flakes.forEach(function(f,i) {
-      f.x+=f.vx*dt; f.y+=f.vy*dt;
-      if (f.y>1.02) flakes[i]=mkFlake(true);
-      ctx.beginPath(); ctx.arc(f.x*W,f.y*H,f.r,0,Math.PI*2);
-      ctx.fillStyle=f.col; ctx.globalAlpha=f.op; ctx.fill(); ctx.globalAlpha=1;
+      f.x += f.vx * dt; f.y += f.vy * dt;
+      if (f.y > 1.02) flakes[i] = mkFlake(true);
+      ctx.beginPath(); ctx.arc(f.x*W, f.y*H, f.r, 0, Math.PI*2);
+      ctx.fillStyle = f.col; ctx.globalAlpha = f.op; ctx.fill(); ctx.globalAlpha = 1;
     });
   }
 
   function drawRoad() {
-    var ry=H*0.90, rh=H*0.10;
-    var rg=ctx.createLinearGradient(0,ry,0,ry+rh);
+    var ry = H * 0.90, rh = H * 0.10;
+    var rg = ctx.createLinearGradient(0,ry,0,ry+rh);
     rg.addColorStop(0,'#0a1020'); rg.addColorStop(1,'#060c18');
-    ctx.fillStyle=rg; ctx.fillRect(0,ry,W,rh);
-    ctx.strokeStyle='rgba(58,219,138,0.18)'; ctx.lineWidth=1.5;
+    ctx.fillStyle = rg; ctx.fillRect(0,ry,W,rh);
+    /* Horizon edge */
+    ctx.strokeStyle = 'rgba(58,219,138,0.18)'; ctx.lineWidth = 1.5;
     ctx.beginPath(); ctx.moveTo(0,ry); ctx.lineTo(W,ry); ctx.stroke();
-    ctx.setLineDash([W*0.04,W*0.03]); ctx.strokeStyle='rgba(255,255,255,0.08)'; ctx.lineWidth=2;
+    /* Centre dashes */
+    ctx.setLineDash([W*0.04, W*0.03]);
+    ctx.strokeStyle = 'rgba(255,255,255,0.08)'; ctx.lineWidth = 2;
     ctx.beginPath(); ctx.moveTo(0,ry+rh*0.5); ctx.lineTo(W,ry+rh*0.5); ctx.stroke();
     ctx.setLineDash([]);
   }
 
   function drawCar(dt) {
-    carX+=CAR_SPEED*dt; if(carX>1.18) carX=-0.18;
-    var cx=carX*W, ry=H*0.90, cw=W*0.10, ch=cw*0.38, cy=ry-ch*0.5;
-    // Headlight cone
-    var hl=ctx.createRadialGradient(cx+cw*0.52,cy+ch*0.5,0,cx+cw*0.52,cy+ch*0.5,cw*1.6);
-    hl.addColorStop(0,'rgba(220,240,255,0.22)'); hl.addColorStop(0.3,'rgba(180,220,255,0.10)'); hl.addColorStop(1,'rgba(100,180,255,0)');
-    ctx.fillStyle=hl;
-    ctx.beginPath(); ctx.moveTo(cx+cw*0.52,cy+ch*0.25); ctx.lineTo(cx+cw*0.52,cy+ch*0.75);
-    ctx.lineTo(cx+cw*2.1,cy+ch*1.1); ctx.lineTo(cx+cw*2.1,cy-ch*0.1); ctx.closePath(); ctx.fill();
-    // Shadow
-    ctx.fillStyle='rgba(0,0,0,0.22)';
-    ctx.beginPath(); ctx.ellipse(cx+cw*0.5,ry+2,cw*0.45,4,0,0,Math.PI*2); ctx.fill();
-    // Body
-    var bg=ctx.createLinearGradient(cx,cy,cx,cy+ch);
+    carX += CAR_SPEED * dt;
+    if (carX > 1.18) carX = -0.18;
+
+    var cx = carX * W, ry = H * 0.90, cw = W * 0.10, ch = cw * 0.38, cy = ry - ch * 0.5;
+
+    /* Headlight cone (in front of car — right side) */
+    var hl = ctx.createRadialGradient(cx+cw*0.52,cy+ch*0.5,0, cx+cw*0.52,cy+ch*0.5,cw*1.6);
+    hl.addColorStop(0,'rgba(220,240,255,0.22)');
+    hl.addColorStop(0.3,'rgba(180,220,255,0.10)');
+    hl.addColorStop(1,'rgba(100,180,255,0)');
+    ctx.fillStyle = hl;
+    ctx.beginPath();
+    ctx.moveTo(cx+cw*0.52, cy+ch*0.25);
+    ctx.lineTo(cx+cw*0.52, cy+ch*0.75);
+    ctx.lineTo(cx+cw*2.1,  cy+ch*1.1);
+    ctx.lineTo(cx+cw*2.1,  cy-ch*0.1);
+    ctx.closePath(); ctx.fill();
+
+    /* Ground shadow */
+    ctx.fillStyle = 'rgba(0,0,0,0.22)';
+    ctx.beginPath(); ctx.ellipse(cx+cw*0.5, ry+2, cw*0.45, 4, 0, 0, Math.PI*2); ctx.fill();
+
+    /* Car body — use polyfilled roundRect */
+    var bg = ctx.createLinearGradient(cx, cy, cx, cy+ch);
     bg.addColorStop(0,'#1a2a3a'); bg.addColorStop(1,'#0a1520');
-    ctx.fillStyle=bg; ctx.beginPath(); ctx.roundRect(cx,cy+ch*0.3,cw,ch*0.7,[3,3,5,5]); ctx.fill();
-    // Cabin
-    ctx.fillStyle='#0d1e2e'; ctx.beginPath(); ctx.roundRect(cx+cw*0.18,cy,cw*0.62,ch*0.42,[4,4,2,2]); ctx.fill();
-    // Windows
-    ctx.fillStyle='rgba(58,219,138,0.12)'; ctx.beginPath(); ctx.roundRect(cx+cw*0.22,cy+ch*0.04,cw*0.25,ch*0.30,2); ctx.fill();
-    ctx.fillStyle='rgba(90,180,255,0.12)'; ctx.beginPath(); ctx.roundRect(cx+cw*0.52,cy+ch*0.04,cw*0.22,ch*0.30,2); ctx.fill();
-    // Wheels
-    [0.16,0.76].forEach(function(wf) {
-      var wx=cx+cw*wf, wy=cy+ch;
+    ctx.fillStyle = bg;
+    ctx.beginPath(); ctx.roundRect(cx, cy+ch*0.3, cw, ch*0.7, [3,3,5,5]); ctx.fill();
+
+    /* Cabin */
+    ctx.fillStyle = '#0d1e2e';
+    ctx.beginPath(); ctx.roundRect(cx+cw*0.18, cy, cw*0.62, ch*0.42, [4,4,2,2]); ctx.fill();
+
+    /* Windows */
+    ctx.fillStyle = 'rgba(58,219,138,0.12)';
+    ctx.beginPath(); ctx.roundRect(cx+cw*0.22, cy+ch*0.04, cw*0.25, ch*0.30, 2); ctx.fill();
+    ctx.fillStyle = 'rgba(90,180,255,0.12)';
+    ctx.beginPath(); ctx.roundRect(cx+cw*0.52, cy+ch*0.04, cw*0.22, ch*0.30, 2); ctx.fill();
+
+    /* Wheels */
+    [0.16, 0.76].forEach(function(wf) {
+      var wx = cx + cw*wf, wy = cy + ch;
       ctx.beginPath(); ctx.arc(wx,wy,ch*0.28,0,Math.PI*2); ctx.fillStyle='#0a0f18'; ctx.fill();
       ctx.beginPath(); ctx.arc(wx,wy,ch*0.14,0,Math.PI*2); ctx.fillStyle='#1e3040'; ctx.fill();
-      ctx.beginPath(); ctx.arc(wx,wy,ch*0.10,0,Math.PI*2); ctx.strokeStyle='rgba(58,219,138,0.35)'; ctx.lineWidth=1; ctx.stroke();
+      ctx.beginPath(); ctx.arc(wx,wy,ch*0.10,0,Math.PI*2);
+      ctx.strokeStyle='rgba(58,219,138,0.35)'; ctx.lineWidth=1; ctx.stroke();
     });
-    // Headlights
-    ctx.beginPath(); ctx.ellipse(cx+cw*0.96,cy+ch*0.50,4,3,0,0,Math.PI*2); ctx.fillStyle='#ddeeff'; ctx.fill();
-    ctx.beginPath(); ctx.ellipse(cx+cw*0.96,cy+ch*0.50,7,5,0,0,Math.PI*2); ctx.fillStyle='rgba(200,230,255,0.25)'; ctx.fill();
-    // Tail lights
-    ctx.beginPath(); ctx.ellipse(cx+cw*0.04,cy+ch*0.50,4,3,0,0,Math.PI*2); ctx.fillStyle='#ff2244'; ctx.fill();
-    ctx.beginPath(); ctx.ellipse(cx+cw*0.04,cy+ch*0.50,7,5,0,0,Math.PI*2); ctx.fillStyle='rgba(255,30,60,0.20)'; ctx.fill();
+
+    /* Headlights */
+    ctx.beginPath(); ctx.ellipse(cx+cw*0.96, cy+ch*0.50, 4, 3, 0, 0, Math.PI*2);
+    ctx.fillStyle='#ddeeff'; ctx.fill();
+    ctx.beginPath(); ctx.ellipse(cx+cw*0.96, cy+ch*0.50, 7, 5, 0, 0, Math.PI*2);
+    ctx.fillStyle='rgba(200,230,255,0.25)'; ctx.fill();
+
+    /* Tail lights */
+    ctx.beginPath(); ctx.ellipse(cx+cw*0.04, cy+ch*0.50, 4, 3, 0, 0, Math.PI*2);
+    ctx.fillStyle='#ff2244'; ctx.fill();
+    ctx.beginPath(); ctx.ellipse(cx+cw*0.04, cy+ch*0.50, 7, 5, 0, 0, Math.PI*2);
+    ctx.fillStyle='rgba(255,30,60,0.20)'; ctx.fill();
   }
 
+  /* ─── Main render loop ─── */
   function loop(t) {
-    var dt=Math.min(t-lastT,100); lastT=t;
+    var dt = Math.min(t - lastT, 100); lastT = t;
     drawSky(); drawAurora(t); drawStars(t); drawSnow(dt); drawRoad(); drawCar(dt);
     requestAnimationFrame(loop);
   }
-  requestAnimationFrame(function(t){ lastT=t; requestAnimationFrame(loop); });
+  requestAnimationFrame(function(t) { lastT = t; requestAnimationFrame(loop); });
 })();
 </template>
 
-<!-- SVG onload fires in the real page context — grabs the template JS and
-     executes it by appending a real <script> to <head>. -->
+<!-- Tiny SVG bootstrapper: fires in the real page context, grabs the
+     template JS and appends it as a real <script> to <head>.
+     The __aurora_boot__ guard prevents double-injection on Streamlit reruns. -->
 <svg xmlns="http://www.w3.org/2000/svg" width="0" height="0"
      onload="(function(){
        if(window.__aurora_boot__) return;

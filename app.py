@@ -671,10 +671,22 @@ def make_input_dataframe(template, model, values):
 
 
 def predict_fraud_probability(model, input_df):
-    """Return probability for the fraud class when possible; otherwise fallback safely."""
+    """Return probability for the fraud/positive class when possible; otherwise fallback safely."""
     if hasattr(model, "predict_proba"):
         probs = model.predict_proba(input_df)
-        return float(probs[0][1])
+        classes = getattr(model, "classes_", None)
+        if classes is None and hasattr(model, "named_steps"):
+            final_step = list(model.named_steps.values())[-1]
+            classes = getattr(final_step, "classes_", None)
+
+        if classes is not None and 1 in list(classes):
+            fraud_index = list(classes).index(1)
+        elif probs.shape[1] > 1:
+            fraud_index = 1
+        else:
+            fraud_index = 0
+
+        return float(probs[0][fraud_index])
 
     # Fallback for models saved without predict_proba.
     pred = model.predict(input_df)[0]
@@ -815,7 +827,7 @@ if predict:
   </div>
 
   <div class="ptrack">
-    <div class="ptrack-fill" style="width:{pct}%;background:linear-gradient(90deg,{bar_col}60,{bar_col});--clr:{bar_col};"></div>
+    <div class="ptrack-fill" style="width:{pct}%;background:{bar_col};--clr:{bar_col};"></div>
   </div>
 
   <div class="gauge">

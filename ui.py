@@ -22,10 +22,10 @@ def wi_val(label: str) -> int:
 
 def risk_meta(p: float):
     if p < 0.25:
-        return "b-low", "Low Risk", "var(--teal)", "var(--teal)"
+        return "b-low", "Low Risk", "var(--aurora-g)", "var(--aurora-g)"
     if p < 0.50:
         return "b-med", "Medium Risk", "var(--gold)", "var(--gold)"
-    return "b-high", "High Risk", "var(--rose)", "var(--rose)"
+    return "b-high", "High Risk", "var(--aurora-r)", "var(--aurora-r)"
 
 
 def action_meta(p: float):
@@ -52,8 +52,8 @@ def render_header() -> None:
     <div class="hdr-icon">
       <svg viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
         <path d="M7 1L1.5 3.5V7c0 2.8 2 5.3 5.5 5.9C10.5 12.3 12.5 9.8 12.5 7V3.5L7 1z"
-              fill="white" fill-opacity="0.95"/>
-        <path d="M4.5 7l2 2 3-3" stroke="#7c5cfc" stroke-width="1.6"
+              fill="white" fill-opacity="0.97"/>
+        <path d="M4.5 7l2 2 3-3" stroke="#2bb5a0" stroke-width="1.6"
               stroke-linecap="round" stroke-linejoin="round"/>
       </svg>
     </div>
